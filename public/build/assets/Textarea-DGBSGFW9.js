@@ -1,0 +1,3 @@
+import{P as l,J as t,l as d,v as s,o as u,f as c}from"./app-BqzU3v1C.js";const n=["rows","placeholder"],g={__name:"Textarea",props:l({row:{type:Number},placeholder:{type:String}},{modelValue:{type:String,required:!0},modelModifiers:{}}),emits:["update:modelValue"],setup(e){const r=t(e,"modelValue");return(i,o)=>d((u(),c("textarea",{"onUpdate:modelValue":o[0]||(o[0]=a=>r.value=a),rows:e.row,class:"block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500",placeholder:e.placeholder},`
+
+    `,8,n)),[[s,r.value]])}};export{g as _};

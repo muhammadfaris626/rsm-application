@@ -1,0 +1,34 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@inertiajs/vue3": "^1.0.0",
+        "@tailwindcss/forms": "^0.5.3",
+        "@vitejs/plugin-vue": "^5.0.0",
+        "autoprefixer": "^10.4.19",
+        "axios": "^1.6.4",
+        "flowbite": "^2.4.1",
+        "laravel-vite-plugin": "^1.0",
+        "postcss": "^8.4.40",
+        "tailwindcss": "^3.4.7",
+        "vite": "^5.0",
+        "vue": "^3.4.0"
+    },
+    "dependencies": {
+        "@coders-tm/vue-number-format": "^3.35.2",
+        "apexcharts": "^4.4.0",
+        "default-passive-events": "^2.0.0",
+        "dropzone": "^6.0.0-beta.2",
+        "jsbarcode": "^3.11.6",
+        "lodash": "^4.17.21",
+        "pdfjs-dist": "^4.5.136",
+        "vue-multiselect": "^3.0.0-beta.3",
+        "vue-router": "^4.4.3",
+        "vue-timer-hook": "^1.0.84",
+        "vue3-apexcharts": "^1.8.0"
+    }
+}

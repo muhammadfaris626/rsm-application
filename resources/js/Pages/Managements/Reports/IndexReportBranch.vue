@@ -179,17 +179,6 @@
         window.open(url);
     });
 </script>
-<style scoped>
-    .chart-container {
-        height: 400px; /* Pastikan semua chart memiliki tinggi yang sama */
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chart-wrapper {
-        flex-grow: 1;
-    }
-</style>
 <template>
     <Head title="Laporan" />
     <AuthenticatedLayout>

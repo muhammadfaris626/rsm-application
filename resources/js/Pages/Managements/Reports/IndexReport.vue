@@ -201,17 +201,6 @@
         window.open(url);
     });
 </script>
-<style scoped>
-    .chart-container {
-        height: 400px; /* Pastikan semua chart memiliki tinggi yang sama */
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chart-wrapper {
-        flex-grow: 1;
-    }
-</style>
 <template>
     <Head title="Laporan" />
     <AuthenticatedLayout>
@@ -371,20 +360,20 @@
                         <VueApexCharts type="area" :options="chart1" :series="series1"></VueApexCharts>
                     </div>
                 </div>
-                <div class="chart-container border-2 rounded-xl bg-white">
+                <div class="border-2 rounded-xl bg-white" style="height: 400px; display: flex; flex-direction: column;">
                     <p class="font-thin uppercase text-center bg-blue-500 rounded-t-xl text-white flex items-center justify-center py-3">
                         <strong>Penjualan {{ new Date().getFullYear() }}</strong>
                     </p>
-                    <div class="chart-wrapper">
+                    <div style="flex-grow: 1;">
                         <VueApexCharts type="bar" height="95%" :options="chartOptions" :series="chartOptions.series" />
                     </div>
                 </div>
 
-                <div class="chart-container border-2 rounded-xl bg-white">
+                <div class="border-2 rounded-xl bg-white" style="height: 400px; display: flex; flex-direction: column;">
                     <p class="font-thin uppercase text-center bg-blue-500 rounded-t-xl text-white flex items-center justify-center py-3">
                         <strong>Top #10 Penjualan Cabang</strong>
                     </p>
-                    <div class="chart-wrapper">
+                    <div style="flex-grow: 1;">
                         <VueApexCharts type="bar" height="95%" :options="chart2" :series="series2" />
                     </div>
                 </div>

@@ -11,6 +11,10 @@ export default {
         './resources/js/**/*.vue',
         "./node_modules/flowbite/**/*.js"
     ],
+    safelist: [
+        '/^datatable-.*$/'
+    ],
+
 
     theme: {
         extend: {

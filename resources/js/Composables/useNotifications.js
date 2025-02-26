@@ -19,9 +19,9 @@ export function useNotifications() {
 
     onMounted(() => {
         fetchNotifications();
-        setInterval(() => {
-            fetchNotifications();
-        }, 30000); // Update setiap 30 detik
+        // setInterval(() => {
+        //     fetchNotifications();
+        // }, 30000); // Update setiap 30 detik
     });
 
     return { notificationCount, orderRequestCount, returnRequestCount, fetchNotifications };

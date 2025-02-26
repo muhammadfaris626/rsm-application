@@ -23,7 +23,16 @@ class ApiPermintaanStokController extends Controller
                     'nomor_permintaan' => $item->ro_number,
                     'tanggal' => Carbon::parse($item->date)->translatedFormat('d F Y'),
                     'cabang' => $item->branch->branch_name,
-                    'status' => $item->status
+                    'status' => $item->status,
+                    'list' => $item->listRequestOrder->map(function($listItem) {
+                        return [
+                            'id' => $listItem->id,
+                            'barang' => $listItem->centerStock->product->product_name,
+                            'jumlah' => $listItem->approved_quantity,
+                            'barcode' => $listItem->serial_barcode,
+                            'status' => false
+                        ];
+                    })
                 ];
             });
         return response()->json([

@@ -14,3 +14,4 @@ Route::post('login', [ApiAuthController::class, 'login']);
 Route::post('logout', [ApiAuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::get('data-permintaan-stok/{user_id}', [ApiPermintaanStokController::class, 'index'])->middleware('auth:sanctum');
+Route::post('data-permintaan-stok/update', [ApiPermintaanStokController::class, 'update'])->middleware('auth:sanctum');

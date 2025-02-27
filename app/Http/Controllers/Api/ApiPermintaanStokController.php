@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\RequestOrder;
+use App\Models\RequestOrderLog;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ApiPermintaanStokController extends Controller
@@ -39,5 +41,35 @@ class ApiPermintaanStokController extends Controller
             'data' => $permintaanStok,
             'total' => count($permintaanStok),
         ]);
+    }
+
+    public function update(Request $request) {
+        $order_id = $request->order_id;
+        $user_id = $request->user_id;
+        $status = $request->status;
+
+        // Cek apakah ada field yang kosong
+        if (!$order_id || !$user_id || !$status) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Semua field harus diisi!'
+            ], 400);
+        }
+
+        // Simpan data ke database
+        RequestOrderLog::create([
+            'request_order_id' => $order_id,
+            'user_id' => $user_id,
+            'status' => $status
+        ]);
+        // $check = RequestOrder::where('id', $order_id)->first();
+        // $check->update([
+        //     'status' => $status
+        // ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil disimpan!'
+        ], 200);
     }
 }

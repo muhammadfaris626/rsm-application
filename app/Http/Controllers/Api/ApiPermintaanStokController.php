@@ -62,10 +62,10 @@ class ApiPermintaanStokController extends Controller
             'user_id' => $user_id,
             'status' => $status
         ]);
-        // $check = RequestOrder::where('id', $order_id)->first();
-        // $check->update([
-        //     'status' => $status
-        // ]);
+        $check = RequestOrder::where('id', $order_id)->first();
+        $check->update([
+            'status' => $status
+        ]);
 
         return response()->json([
             'success' => true,

@@ -3,3 +3,5 @@
 /.vscode
 /storage/.DS_Store
 .DS_Store
+/storage
+/public/storage

@@ -1,0 +1,158 @@
+<script setup>
+    import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+    import { Head, Link, useForm } from '@inertiajs/vue3';
+    import { ref, onMounted, computed } from 'vue';
+    import InputLabel from "@/Components/InputLabel.vue";
+    import TextInput from "@/Components/TextInput.vue";
+    import VueMultiselect from "vue-multiselect";
+    import axios from "axios";
+    import "leaflet/dist/leaflet.css";
+    import { LMap, LTileLayer, LPolygon, LMarker } from "@vue-leaflet/vue-leaflet";
+
+    const props = defineProps({
+        branches: {
+            type: Array
+        }
+    });
+
+    const form = useForm({
+        branch_id: "",
+        coordinates: ""
+    });
+
+    const zoom = ref(5);
+    const center = ref([-2.5489, 118.0149]); // Pusat Indonesia
+
+    // Array untuk menyimpan koordinat polygon
+    const polygonCoordinates = ref([]);
+
+    // Fungsi menangkap klik dan menambahkan koordinat ke polygon
+    const addPoint = (event) => {
+        const { lat, lng } = event.latlng;
+        polygonCoordinates.value.push([lat, lng]);
+    };
+
+    // Fungsi untuk mengubah posisi titik setelah di-drag
+    const updatePoint = (index, event) => {
+        const { lat, lng } = event.target.getLatLng();
+        polygonCoordinates.value[index] = [lat, lng];
+    };
+
+    // Fungsi untuk menghapus titik tertentu dengan klik kanan
+    const removePoint = (index) => {
+        polygonCoordinates.value.splice(index, 1);
+    };
+
+    // Fungsi untuk menghapus semua titik (reset polygon)
+    const resetPolygon = () => {
+        polygonCoordinates.value = [];
+    };
+
+    const submit = () => {
+        form.branch_id = form.branch_id.id;
+        form.coordinates = [polygonCoordinates.value];
+        axios.post('/api/locations', form.data(), {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        window.location.href = '/database/locations';
+    }
+</script>
+<template>
+    <Head title="Tambah Lokasi" />
+    <AuthenticatedLayout>
+        <div class="grid grid-cols-1 h-full">
+            <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+                        <li class="inline-flex items-center">
+                            <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                                </svg>
+                                Produk
+                            </a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                                </svg>
+                                <Link :href="route('locations.index')" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Lokasi</Link>
+                            </div>
+                        </li>
+                        <li aria-current="page">
+                            <div class="flex items-center">
+                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                                </svg>
+                                <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Tambah Lokasi</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="pt-2">
+                <h1 class="text-xl font-semibold text-blue-600">TAMBAH PERMINTAAN STOK</h1>
+                <form @submit.prevent="submit">
+                    <div class="grid grid-cols-3 gap-2 mt-2 bg-white p-4 rounded-xl">
+                        <div>
+                            <InputLabel for="branch_id" value="Cabang" />
+                            <VueMultiselect
+                                v-model="form.branch_id"
+                                :options="props.branches"
+                                :close-on-select="true"
+                                placeholder="Pilih"
+                                label="branch_name"
+                                track-by="id"
+                            />
+                        </div>
+                        <div class="col-span-2">
+                            <InputLabel for="coordinates" value="Lokasi" />
+                            <div style="height:600px">
+                                <l-map ref="map" v-model:zoom="zoom" :center="center" @click="addPoint">
+                                    <l-tile-layer
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        layer-type="base"
+                                        name="OpenStreetMap"
+                                    ></l-tile-layer>
+
+                                    <!-- Polygon akan terbentuk sesuai titik yang diklik -->
+                                    <l-polygon
+                                        v-if="polygonCoordinates.length > 2"
+                                        :lat-lngs="[...polygonCoordinates, polygonCoordinates[0]]"
+                                        color="blue"
+                                        fillColor="blue"
+                                        :fill-opacity="0.3"
+                                    ></l-polygon>
+
+                                    <!-- Marker untuk tiap titik polygon -->
+                                    <l-marker
+                                        v-for="(coord, index) in polygonCoordinates"
+                                        :key="index"
+                                        :lat-lng="coord"
+                                        draggable
+                                        @dragend="updatePoint(index, $event)"
+                                        @contextmenu="removePoint(index)"
+                                    ></l-marker>
+                                </l-map>
+
+                                <div class="mt-4">
+                                    <button @click="resetPolygon" class="px-4 py-2 bg-red-500 text-white rounded">
+                                        Reset Polygon
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">SIMPAN</button>
+                        <Link :href="route('locations.index')" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">KEMBALI</Link>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </AuthenticatedLayout>
+</template>
+<style src="vue-multiselect/dist/vue-multiselect.css"></style>

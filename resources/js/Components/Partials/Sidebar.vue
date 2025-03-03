@@ -241,7 +241,7 @@
                 </li>
                 <li
                     :class="{ hidden: !isRouteEnable([
-                        'product-category: menu', 'product: menu', 'employee: menu', 'branch: menu', 'expenditure: menu', 'position: menu', 'supplier: menu'
+                        'product-category: menu', 'product: menu', 'employee: menu', 'branch: menu', 'expenditure: menu', 'position: menu', 'supplier: menu', 'location: menu'
                     ]) }"
                 >
                     <button type="button" class="flex items-center w-full p-2 text-base text-white transition duration-75 rounded-lg group hover:bg-white hover:text-blue-500" aria-controls="database" data-collapse-toggle="database">
@@ -256,7 +256,7 @@
                     <ul id="database" class="py-2"
                         :class="{ hidden: !isRouteActive([
                                 'productCategories.index', 'products.index', 'employees.index', 'branches.index', 'expenditures.index', 'positions.index',
-                                'suppliers.index'
+                                'suppliers.index', 'locations.index'
                             ]) }"
                     >
                         <template v-if="hasPermission('product-category: menu')">
@@ -305,6 +305,13 @@
                             <li>
                                 <SidebarLink :href="route('suppliers.index')" :active="isRouteActive(['suppliers.index'])">
                                     Supplier
+                                </SidebarLink>
+                            </li>
+                        </template>
+                        <template v-if="hasPermission('location: menu')">
+                            <li>
+                                <SidebarLink :href="route('locations.index')" :active="isRouteActive(['locations.index'])">
+                                    Lokasi
                                 </SidebarLink>
                             </li>
                         </template>

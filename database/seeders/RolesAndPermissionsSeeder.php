@@ -32,7 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Karyawan
             'performance',
             // Database
-            'branch', 'employee', 'product-category', 'product', 'expenditure', 'position', 'supplier',
+            'branch', 'employee', 'product-category', 'product', 'expenditure', 'position', 'supplier', 'location',
             // Pengaturan
             'user', 'role', 'permission',
             // 'approval-type',
@@ -65,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions['expenditure: menu'], $permissions['expenditure: create'], $permissions['expenditure: read'], $permissions['expenditure: update'], $permissions['expenditure: delete'],
                 $permissions['position: menu'], $permissions['position: create'], $permissions['position: read'], $permissions['position: update'], $permissions['position: delete'],
                 $permissions['supplier: menu'], $permissions['supplier: create'], $permissions['supplier: read'], $permissions['supplier: update'], $permissions['supplier: delete'],
+                $permissions['location: menu'], $permissions['location: create'], $permissions['location: read'], $permissions['location: update'], $permissions['location: delete'],
                 $permissions['user: menu'], $permissions['user: create'], $permissions['user: read'], $permissions['user: update'], $permissions['user: delete'],
                 $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
                 $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],
@@ -88,6 +89,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions['expenditure: menu'], $permissions['expenditure: create'], $permissions['expenditure: read'], $permissions['expenditure: update'], $permissions['expenditure: delete'],
                 $permissions['position: menu'], $permissions['position: create'], $permissions['position: read'], $permissions['position: update'], $permissions['position: delete'],
                 $permissions['supplier: menu'], $permissions['supplier: create'], $permissions['supplier: read'], $permissions['supplier: update'], $permissions['supplier: delete'],
+                $permissions['location: menu'], $permissions['location: create'], $permissions['location: read'], $permissions['location: update'], $permissions['location: delete'],
                 $permissions['user: menu'], $permissions['user: create'], $permissions['user: read'], $permissions['user: update'], $permissions['user: delete'],
                 $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
                 $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],

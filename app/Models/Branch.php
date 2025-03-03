@@ -39,4 +39,8 @@ class Branch extends Model
     public function requestReturn(): HasMany {
         return $this->hasMany(RequestReturn::class);
     }
+
+    public function locations(): HasMany {
+        return $this->hasMany(Location::class);
+    }
 }

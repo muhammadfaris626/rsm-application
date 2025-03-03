@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenditureController;
 use App\Http\Controllers\InventoryPurchaseController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ManagementStructureController;
 use App\Http\Controllers\OperationalBranchController;
 use App\Http\Controllers\OperationalCenterController;
@@ -72,6 +73,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/expenditures', ExpenditureController::class);
         Route::resource('/positions', PositionController::class);
         Route::resource('/suppliers', SupplierController::class);
+        Route::resource('/locations', LocationController::class);
     });
     Route::prefix('/settings')->group(function() {
         Route::resource('/users', UserController::class);

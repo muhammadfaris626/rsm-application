@@ -9,7 +9,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: 'resources/js/app.js',
-            ssr: 'resources/js/ssr.js',
+            ssr: 'ssr.js',
             refresh: true,
         }),
         vue({

@@ -63,7 +63,7 @@ class RoleController extends Controller {
         Gate::authorize('view', $role);
 
         $allPermissions = [
-            'USER', 'ROLE', 'PERMISSION', 'PRODUCT-CATEGORY', 'PRODUCT', 'EMPLOYEE', 'BRANCH', 'EXPENDITURE', 'POSITION', 'SUPPLIER', 'OPERATIONAL-CENTER', 'OPERATIONAL-BRANCH',
+            'USER', 'ROLE', 'PERMISSION', 'PRODUCT-CATEGORY', 'PRODUCT', 'EMPLOYEE', 'BRANCH', 'EXPENDITURE', 'POSITION', 'SUPPLIER', 'LOCATION', 'OPERATIONAL-CENTER', 'OPERATIONAL-BRANCH',
             'MANAGEMENT-STRUCTURE', 'INVENTORY-PURCHASE', 'REQUEST-ORDER', 'BRANCH-PRODUCT', 'CENTER-STOCK', 'SALE', 'REPORT', 'REPORT-BRANCH', 'PERFORMANCE', 'REQUEST-RETURN'
         ];
 
@@ -78,6 +78,7 @@ class RoleController extends Controller {
             'EXPENDITURE'             => 'PENGELUARAN',
             'POSITION'                => 'JABATAN',
             'SUPPLIER'                => 'SUPPLIER',
+            'LOCATION'                => 'LOKASI',
             'OPERATIONAL-CENTER'      => 'OPERASIONAL PUSAT',
             'OPERATIONAL-BRANCH'      => 'OPERASIONAL CABANG',
             'MANAGEMENT-STRUCTURE'    => 'STRUKTUR MANAJEMEN',

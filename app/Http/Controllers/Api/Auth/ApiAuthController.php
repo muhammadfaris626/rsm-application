@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Employee;
+use App\Models\Location;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,6 +30,8 @@ class ApiAuthController extends Controller
         }
 
         $token = $user->createToken($user->name)->plainTextToken;
+        $employee = Employee::where('employee_number', $user->username)->first();
+        $location = $employee ? Location::where('branch_id', $employee->branch_id)->first() : null;
 
         return response()->json([
             'message' => 'Login berhasil.',
@@ -37,7 +41,11 @@ class ApiAuthController extends Controller
                 'email' => $user->email,
                 'name' => $user->name
             ],
-            'token' => $token
+            'token' => $token,
+            'location' => $location ? [
+                'branch_id' => $location->branch_id,
+                'coordinates' => $location->coordinates
+            ] : null
         ], 200);
     }
 

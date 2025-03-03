@@ -39,13 +39,11 @@ class ApiAuthController extends Controller
                 'id' => $user->id,
                 'username' => $user->username,
                 'email' => $user->email,
-                'name' => $user->name
+                'name' => $user->name,
+                'branch_id' => $location->branch_id ?? "",
+                'coordinates' => $location->coordinates ?? ""
             ],
             'token' => $token,
-            'location' => $location ? [
-                'branch_id' => $location->branch_id,
-                'coordinates' => $location->coordinates
-            ] : null
         ], 200);
     }
 

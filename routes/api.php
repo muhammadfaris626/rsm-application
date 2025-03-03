@@ -20,3 +20,4 @@ Route::post('data-permintaan-stok/update', [ApiPermintaanStokController::class, 
 
 Route::get('/locations', [ApiLocationController::class, 'index']);
 Route::post('/locations', [ApiLocationController::class, 'store']);
+Route::post('/attendance', [ApiLocationController::class, 'attendance']);

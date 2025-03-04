@@ -38,17 +38,4 @@ class ApiLocationController extends Controller
         ]);
     }
 
-    public function attendance(Request $request) {
-        if (!$request->hasFile('image')) {
-            return response()->json(['message' => 'File tidak ditemukan'], 400);
-        }
-
-        $file = $request->file('image');
-        $path = $file->store('attendances', 'public'); // Simpan ke storage
-
-        return response()->json([
-            'message' => 'Gambar berhasil diunggah',
-            'url' => asset("storage/$path"),
-        ]);
-    }
 }

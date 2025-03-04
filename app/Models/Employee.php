@@ -24,4 +24,8 @@ class Employee extends Model
     public function managementStructure(): HasMany {
         return $this->hasMany(ManagementStructure::class);
     }
+
+    public function attendances(): HasMany {
+        return $this->hasMany(Attendance::class);
+    }
 }

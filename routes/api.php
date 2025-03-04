@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApiAttendanceController;
 use App\Http\Controllers\Api\ApiLocationController;
 use App\Http\Controllers\Api\ApiPermintaanStokController;
 use App\Http\Controllers\Api\Auth\ApiAuthController;
@@ -20,4 +21,4 @@ Route::post('data-permintaan-stok/update', [ApiPermintaanStokController::class, 
 
 Route::get('/locations', [ApiLocationController::class, 'index']);
 Route::post('/locations', [ApiLocationController::class, 'store']);
-Route::post('/attendance', [ApiLocationController::class, 'attendance']);
+Route::post('/attendance', [ApiAttendanceController::class, 'attendance']);

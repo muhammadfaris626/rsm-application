@@ -65,32 +65,9 @@ class ApiAttendanceController extends Controller
         'message' => 'Hari ini sudah absen lengkap, tidak bisa absen lagi.',
         'status' => 'completed'
         ]);
+    }
 
+    public function polygon(Request $request) {
 
-
-        // if (empty($checkAttendance) && $hour < 5) {
-        //     return response()->json([
-        //         'message' => 'Berhasil absen masuk.'
-        //     ]);
-        // } else {
-        //     return response()->json([
-        //         'message' => 'Tidak bisa absen sebelum jam 05:00.'
-        //     ]);
-        // }
-
-
-
-
-
-
-
-
-        // Attendance::create([
-        //     'employee_id' => $employee->id,
-        //     'work_date' => date('Y-m-d', strtotime($request->check_in)),
-        //     'check_in' =>
-        // ]);
-
-        
     }
 }

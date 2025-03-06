@@ -32,10 +32,12 @@ class ApiAttendanceController extends Controller
 
         // Jika belum ada absen sama sekali, maka ini dianggap absen masuk
         if (!$attendance) {
+            $path = $request->file('photo')->store('check_in', 'public');
             Attendance::create([
                 'employee_id' => $employee->id,
                 'work_date' => $date,
                 'check_in' => $request->attendance,
+                'check_in_photo' => $path
             ]);
 
             return response()->json([
@@ -46,8 +48,10 @@ class ApiAttendanceController extends Controller
 
         // Jika sudah ada absen masuk, berarti ini adalah absen keluar
         if ($attendance && $attendance->check_out === null) {
+            $path = $request->file('photo')->store('check_out', 'public');
             $attendance->update([
                 'check_out' => $request->attendance,
+                'check_out_photo' => $path
             ]);
 
             return response()->json([
@@ -87,6 +91,6 @@ class ApiAttendanceController extends Controller
         //     'check_in' =>
         // ]);
 
-        // $path = $request->file('check_in_photo')->store('check_in', 'public');
+        
     }
 }

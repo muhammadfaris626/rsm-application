@@ -28,4 +28,12 @@ class Employee extends Model
     public function attendances(): HasMany {
         return $this->hasMany(Attendance::class);
     }
+
+    public function mutations(): HasMany {
+        return $this->hasMany(Mutation::class);
+    }
+
+    public function terminations(): HasMany {
+        return $this->hasMany(Termination::class);
+    }
 }

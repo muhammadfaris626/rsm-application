@@ -16,11 +16,11 @@ class ProductCategorySeeder extends Seeder
     {
         $data = [
             [
-                'product_category_code' => 'PK001',
+                'product_category_code' => 'RSM001',
                 'product_category_name' => 'Kategori Produk 1'
             ],
             [
-                'product_category_code' => 'PK002',
+                'product_category_code' => 'RSM002',
                 'product_category_name' => 'Kategori Produk 2'
             ],
         ];

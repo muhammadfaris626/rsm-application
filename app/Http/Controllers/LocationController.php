@@ -21,6 +21,7 @@ class LocationController extends Controller
     }
 
     public function create(): Response {
+        Gate::authorize('create', Location::class);
         return Inertia::render('Database/Locations/CreateLocation', [
             'branches' => BranchResource::collection(Branch::all()),
         ]);

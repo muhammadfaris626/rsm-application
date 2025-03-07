@@ -64,7 +64,8 @@ class RoleController extends Controller {
 
         $allPermissions = [
             'USER', 'ROLE', 'PERMISSION', 'PRODUCT-CATEGORY', 'PRODUCT', 'EMPLOYEE', 'BRANCH', 'EXPENDITURE', 'POSITION', 'SUPPLIER', 'LOCATION', 'OPERATIONAL-CENTER', 'OPERATIONAL-BRANCH',
-            'MANAGEMENT-STRUCTURE', 'INVENTORY-PURCHASE', 'REQUEST-ORDER', 'BRANCH-PRODUCT', 'CENTER-STOCK', 'SALE', 'REPORT', 'REPORT-BRANCH', 'PERFORMANCE', 'REQUEST-RETURN'
+            'MANAGEMENT-STRUCTURE', 'INVENTORY-PURCHASE', 'REQUEST-ORDER', 'BRANCH-PRODUCT', 'CENTER-STOCK', 'SALE', 'REPORT', 'REPORT-BRANCH', 'PERFORMANCE', 'REQUEST-RETURN', 'ATTENDANCE',
+            'MUTATION', 'TERMINATION'
         ];
 
         $categoryNames = [
@@ -90,7 +91,10 @@ class RoleController extends Controller {
             'SALE'                    => 'PENJUALAN',
             'REPORT'                  => 'LAPORAN',
             'REPORT-BRANCH'           => 'LAPORAN CABANG',
-            'PERFORMANCE'             => 'KINERJA'
+            'PERFORMANCE'             => 'KINERJA',
+            'ATTENDANCE'              => 'ABSENSI',
+            'MUTATION'                => 'MUTASI',
+            'TERMINATION'             => 'PEMBERHENTIAN'
         ];
 
         $list = [];

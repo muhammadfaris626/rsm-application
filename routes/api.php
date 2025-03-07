@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\ApiAttendanceController;
+use App\Http\Controllers\Api\ApiEmployeeAttendanceController;
 use App\Http\Controllers\Api\ApiLocationController;
+use App\Http\Controllers\Api\ApiMutationController;
 use App\Http\Controllers\Api\ApiPermintaanStokController;
+use App\Http\Controllers\Api\ApiTerminationController;
 use App\Http\Controllers\Api\Auth\ApiAuthController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\LocationController;
@@ -22,3 +25,10 @@ Route::post('data-permintaan-stok/update', [ApiPermintaanStokController::class, 
 Route::get('/locations', [ApiLocationController::class, 'index']);
 Route::post('/locations', [ApiLocationController::class, 'store']);
 Route::post('/attendance', [ApiAttendanceController::class, 'attendance']);
+// Employee Attendance
+Route::get('/employee-attendances', [ApiEmployeeAttendanceController::class, 'index']);
+Route::get('/employee-attendances/{id}', [ApiEmployeeAttendanceController::class, 'show']);
+// Employee Mutation
+Route::get('/employee-mutations', [ApiMutationController::class, 'index']);
+// Employee Termination
+Route::get('/employee-terminations', [ApiTerminationController::class, 'index']);

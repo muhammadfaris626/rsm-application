@@ -66,8 +66,4 @@ class ApiAttendanceController extends Controller
         'status' => 'completed'
         ]);
     }
-
-    public function polygon(Request $request) {
-
-    }
 }

@@ -43,4 +43,8 @@ class Branch extends Model
     public function locations(): HasMany {
         return $this->hasMany(Location::class);
     }
+
+    public function mutations(): HasMany {
+        return $this->hasMany(Mutation::class);
+    }
 }

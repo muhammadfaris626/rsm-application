@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\ApprovalTypeController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BranchProductController;
 use App\Http\Controllers\CenterProductController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\ExpenditureController;
 use App\Http\Controllers\InventoryPurchaseController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ManagementStructureController;
+use App\Http\Controllers\MutationController;
 use App\Http\Controllers\OperationalBranchController;
 use App\Http\Controllers\OperationalCenterController;
 use App\Http\Controllers\PerformanceController;
@@ -26,6 +28,7 @@ use App\Http\Controllers\RequestReturnController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\TerminationController;
 use App\Http\Controllers\UserController;
 
 use Illuminate\Support\Facades\Route;
@@ -63,7 +66,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('/managementStructures', ManagementStructureController::class);
     });
     Route::prefix('/employee')->group(function() {
+        Route::resource('/attendances', AttendanceController::class);
         Route::resource('/performances', PerformanceController::class);
+        Route::resource('/mutations', MutationController::class);
+        Route::resource('/terminations', TerminationController::class);
     });
     Route::prefix('/database')->group(function() {
         Route::resource('/branches', BranchController::class);

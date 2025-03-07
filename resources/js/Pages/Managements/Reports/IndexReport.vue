@@ -229,32 +229,34 @@
             </div>
             <div class="flex justify-between">
                 <div>
-                    <div class="flex justify-start">
-                        <div class="flex items-center justify-start mr-2">
-                            Cetak :
+                    <div class="flex">
+                        <div class="flex w-14 items-center justify-start">
+                            Cetak
                         </div>
-                        <div class="w-56">
+                        <div class="flex-initial w-64 ...">
                             <VueMultiselect
-                                v-model="selectCetak"
-                                :options="pilihanCetak"
-                                :close-on-select="true"
-                                placeholder="Pilih cetak"
-                                label="pilihan"
-                                track-by="id"
-                            />
+                                    v-model="selectCetak"
+                                    :options="pilihanCetak"
+                                    :close-on-select="true"
+                                    placeholder="Pilih cetak"
+                                    label="pilihan"
+                                    track-by="id"
+                                />
                         </div>
-                        <div class="flex items-center justify-start mr-2 ml-2">
-                            Export :
+                    </div>
+                    <div class="flex mt-2">
+                        <div class="flex w-14 items-center justify-start">
+                            Export
                         </div>
-                        <div class="w-56">
+                        <div class="flex-initial w-64 ...">
                             <VueMultiselect
-                                v-model="selectExport"
-                                :options="pilihanCetak"
-                                :close-on-select="true"
-                                placeholder="Pilih export"
-                                label="pilihan"
-                                track-by="id"
-                            />
+                                    v-model="selectExport"
+                                    :options="pilihanCetak"
+                                    :close-on-select="true"
+                                    placeholder="Pilih export"
+                                    label="pilihan"
+                                    track-by="id"
+                                />
                         </div>
                     </div>
                 </div>

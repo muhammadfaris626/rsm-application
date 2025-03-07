@@ -42,7 +42,7 @@ class ProductCategoryController extends Controller
     public function store(ProductCategoryRequest $request): RedirectResponse {
         Gate::authorize('create', ProductCategory::class);
         $count = (ProductCategory::max('id') ?? 0) + 1;
-        $generateCategory = 'PK' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        $generateCategory = 'RSM' . str_pad($count, 4, '0', STR_PAD_LEFT);
         $productCategory = ProductCategory::create([
             'product_category_code' => $generateCategory,
             'product_category_name' => $request->product_category_name

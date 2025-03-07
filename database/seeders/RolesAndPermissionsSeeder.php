@@ -30,7 +30,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Management
             'report','report-branch', 'management-structure',
             // Karyawan
-            'performance',
+            'attendance', 'performance', 'mutation', 'termination',
             // Database
             'branch', 'employee', 'product-category', 'product', 'expenditure', 'position', 'supplier', 'location',
             // Pengaturan
@@ -70,6 +70,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
                 $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],
                 $permissions['performance: menu'], $permissions['performance: create'], $permissions['performance: read'], $permissions['performance: update'], $permissions['performance: delete'],
+                $permissions['attendance: menu'], $permissions['attendance: create'], $permissions['attendance: read'], $permissions['attendance: update'], $permissions['attendance: delete'],
+                $permissions['mutation: menu'], $permissions['mutation: create'], $permissions['mutation: read'], $permissions['mutation: update'], $permissions['mutation: delete'],
+                $permissions['termination: menu'], $permissions['termination: create'], $permissions['termination: read'], $permissions['termination: update'], $permissions['termination: delete'],
             ], // Root has all permissions
             'admin-pusat' => [
                 $permissions['branch-product: menu'], $permissions['branch-product: create'], $permissions['branch-product: read'], $permissions['branch-product: update'], $permissions['branch-product: delete'],
@@ -94,6 +97,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
                 $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],
                 $permissions['performance: menu'], $permissions['performance: create'], $permissions['performance: read'], $permissions['performance: update'], $permissions['performance: delete'],
+                $permissions['attendance: menu'], $permissions['attendance: create'], $permissions['attendance: read'], $permissions['attendance: update'], $permissions['attendance: delete'],
+                $permissions['mutation: menu'], $permissions['mutation: create'], $permissions['mutation: read'], $permissions['mutation: update'], $permissions['mutation: delete'],
+                $permissions['termination: menu'], $permissions['termination: create'], $permissions['termination: read'], $permissions['termination: update'], $permissions['termination: delete'],
             ],
             'karyawan' => [],
             'admin-branch' => [

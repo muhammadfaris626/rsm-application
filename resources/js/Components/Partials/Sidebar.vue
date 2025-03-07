@@ -191,7 +191,7 @@
                 </li>
                 <li
                     :class="{ hidden: !isRouteEnable([
-                        'performance: menu'
+                        'performance: menu', 'attendance: menu', 'mutation: menu'
                     ]) }"
                 >
                     <button type="button" class="flex items-center w-full p-2 text-base text-white transition duration-75 rounded-lg group hover:bg-white hover:text-blue-500" aria-controls="karyawan" data-collapse-toggle="karyawan">
@@ -205,38 +205,40 @@
                     </button>
                     <ul id="karyawan" class="py-2"
                         :class="{ hidden: !isRouteActive([
-                            'performances.index'
+                            'performances.index', 'attendance.index',
+                            'mutations.index', 'mutations.create', 'mutations.edit', 'mutations.show',
+                            'terminations.index', 'terminations.create', 'terminations.edit', 'terminations.show'
                         ]) }"
                     >
-                        <li>
-                            <SidebarLink :href="'#'">
-                                Absensi
-                            </SidebarLink>
-                        </li>
-                        <template v-if="hasPermission('performance: menu')">
+                        <template v-if="hasPermission('attendance: menu')">
+                            <li>
+                                <SidebarLink :href="route('attendances.index')" :active="isRouteActive(['attendances.index'])">
+                                    Absensi
+                                </SidebarLink>
+                            </li>
+                        </template>
+                        <template v-if="hasPermission('mutation: menu')">
+                            <li>
+                                <SidebarLink :href="route('mutations.index')" :active="isRouteActive(['mutations.index', 'mutations.create', 'mutations.edit', 'mutations.show'])">
+                                    Mutasi
+                                </SidebarLink>
+                            </li>
+                        </template>
+                        <template v-if="hasPermission('termination: menu')">
+                            <li>
+                                <SidebarLink :href="route('terminations.index')" :active="isRouteActive(['terminations.index', 'terminations.create', 'terminations.edit', 'terminations.show'])">
+                                    Pemberhentian
+                                </SidebarLink>
+                            </li>
+                        </template>
+
+                        <!-- <template v-if="hasPermission('performance: menu')">
                             <li>
                                 <SidebarLink :href="'#'">
                                     Kinerja
                                 </SidebarLink>
                             </li>
-                        </template>
-
-
-                        <li>
-                            <SidebarLink :href="'#'">
-                                Profil
-                            </SidebarLink>
-                        </li>
-                        <li>
-                            <SidebarLink :href="'#'">
-                                Mutasi
-                            </SidebarLink>
-                        </li>
-                        <li>
-                            <SidebarLink :href="'#'">
-                                Pemberhentian
-                            </SidebarLink>
-                        </li>
+                        </template> -->
                     </ul>
                 </li>
                 <li

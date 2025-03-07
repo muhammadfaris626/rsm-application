@@ -159,7 +159,8 @@ class RoleController extends Controller {
         }
 
         return Inertia::render('Settings/Roles/ReadRole', [
-            'fetchData' => $list
+            'fetchData' => $list,
+            'namaRole' => str_replace("-", " ", strtoupper($role->name))
         ]);
     }
 

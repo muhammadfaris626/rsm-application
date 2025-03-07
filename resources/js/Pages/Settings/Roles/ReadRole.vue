@@ -1,11 +1,11 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { Head, Link, useForm } from '@inertiajs/vue3';
+    import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
     import Table from '@/Components/Custom/Table.vue';
     import TableRow from '@/Components/Custom/TableRow.vue';
     import TableHeaderCell from '@/Components/Custom/TableHeaderCell.vue';
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
-    defineProps(["fetchData"]);
+    defineProps(["fetchData", 'namaRole']);
     const form = useForm({});
 
     const updateRolePermission = (role_id, permission_id) => {
@@ -55,7 +55,7 @@
                 </div>
                 <div>
                     <div class="relative">
-                        <h1 class="text-2xl font-bold dark:text-white">PERAN : ROOT</h1>
+                        <h1 class="text-2xl font-bold dark:text-white uppercase">PERAN : {{ namaRole }}</h1>
                     </div>
                 </div>
             </div>

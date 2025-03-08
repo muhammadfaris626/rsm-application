@@ -139,7 +139,7 @@
                                 </l-map>
 
                                 <div class="mt-4">
-                                    <button @click="resetPolygon" class="px-4 py-2 bg-red-500 text-white rounded">
+                                    <button type="button" @click="resetPolygon" class="px-4 py-2 bg-red-500 text-white rounded">
                                         Reset Polygon
                                     </button>
                                 </div>

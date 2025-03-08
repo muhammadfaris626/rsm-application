@@ -184,7 +184,7 @@
                 <template #header>
                     <TableRow>
                         <TableHeaderCell>NO</TableHeaderCell>
-                        <TableHeaderCell>KODE JABATAN</TableHeaderCell>
+                        <TableHeaderCell>NAMA JABATAN</TableHeaderCell>
                         <TableHeaderCell></TableHeaderCell>
                     </TableRow>
                 </template>

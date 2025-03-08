@@ -344,166 +344,166 @@
             </Table>
             <!-- Modal Lihat Data  -->
             <Modal :show="showModalRead" @close="closeModalRead">
-                    <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
-                        <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                                TAMPILKAN CABANG
-                            </h3>
-                        </div>
-                        <div class="py-2">
-                            <div class="relative overflow-x-auto">
-                                <table class="table-collapse w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                                    <tbody>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                ID
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.id }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                KODE CABANG
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.branch_code }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                NAMA CABANG
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.branch_name }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                ALAMAT CABANG
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.branch_address }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                STATUS CABANG
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                <p
-                                                    class="text-white font-medium rounded-sm text-sm px-2 text-center inline-flex items-center"
-                                                    :class="form.status == 'Aktif' ? 'bg-green-500' : 'bg-red-500'"
-                                                >
-                                                    {{ form.status }}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                PROFIL CABANG
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                <pre style="white-space: pre-line; font-size: 13px; color: gray; font-family: 'Arial', sans-serif;">
-                                                    {{ form.description }}
-                                                </pre>
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                DIUBAH OLEH
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.last_update.user.name }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                TANGGAL DIBUAT
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.created_at }}
-                                            </td>
-                                        </tr>
-                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                TANGGAL DIUBAH
-                                            </th>
-                                            <td class="px-6 py-4">
-                                                {{ form.updated_at }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                    <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            TAMPILKAN CABANG
+                        </h3>
+                    </div>
+                    <div class="py-2">
+                        <div class="relative overflow-x-auto">
+                            <table class="table-collapse w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                                <tbody>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            ID
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.id }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            KODE CABANG
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.branch_code }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            NAMA CABANG
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.branch_name }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            ALAMAT CABANG
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.branch_address }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            STATUS CABANG
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            <p
+                                                class="text-white font-medium rounded-sm text-sm px-2 text-center inline-flex items-center"
+                                                :class="form.status == 'Aktif' ? 'bg-green-500' : 'bg-red-500'"
+                                            >
+                                                {{ form.status }}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            PROFIL CABANG
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            <pre style="white-space: pre-line; font-size: 13px; color: gray; font-family: 'Arial', sans-serif;">
+                                                {{ form.description }}
+                                            </pre>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            DIUBAH OLEH
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.last_update.user.name }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            TANGGAL DIBUAT
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.created_at }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            TANGGAL DIUBAH
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.updated_at }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </Modal>
-                <!-- Modal Ubah Data  -->
-                <Modal :show="showModalUpdate" @close="closeModalUpdate">
-                    <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
-                        <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                                UBAH CABANG
-                            </h3>
-                        </div>
-                        <form @submit.prevent="ubahData">
-                            <div class="grid grid-cols-2 gap-4 mx-4">
-                                <div>
-                                    <label for="branch_code" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nomor</label>
-                                    <input v-model="form.branch_code" type="text" id="branch_code" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                                    <InputError :message="form.errors.branch_code" />
-                                </div>
-                                <div>
-                                    <label for="branch_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Cabang</label>
-                                    <input v-model="form.branch_name" type="text" id="branch_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                                    <InputError :message="form.errors.branch_name" />
-                                </div>
-                                <div>
-                                    <label for="branch_address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat Cabang</label>
-                                    <input v-model="form.branch_address" type="text" id="branch_address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                                    <InputError :message="form.errors.branch_address" />
-                                </div>
-                                <div>
-                                    <label for="status" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status Cabang</label>
-                                    <select id="status" v-model="form.status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                        <option value="" selected disabled>Pilih</option>
-                                        <option value="Aktif">Aktif</option>
-                                        <option value="Tidak Aktif">Tidak Aktif</option>
-                                    </select>
-                                    <InputError class="mt-2" :message="form.errors.status" />
-                                </div>
-                                <div class="col-span-2">
-                                    <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Profil Cabang</label>
-                                    <Textarea :row="9" v-model="form.description" :placeholder="'Silahkan masukkan profil cabang disini...'" />
-                                    <InputError class="mt-2" :message="form.errors.description" />
-                                </div>
-                            </div>
-                            <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
-                                <button :class="{ 'opacity-25': form.processing }" :disabled="form.processing" type="submit" class="text-white uppercase bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Ubah</button>
-                            </div>
-                        </form>
+                </div>
+            </Modal>
+            <!-- Modal Ubah Data  -->
+            <Modal :show="showModalUpdate" @close="closeModalUpdate">
+                <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                    <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            UBAH CABANG
+                        </h3>
                     </div>
-                </Modal>
-                <!-- Modal Hapus Data  -->
-                <Modal :show="showModalDelete" @close="closeModalDelete">
-                    <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
-                        <div class="p-4 md:p-5 text-center">
-                            <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                            </svg>
-                            <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-                                Apakah anda yakin ingin menghapus cabang ini ?
-                            </h3>
-                            <button @click="hapusData" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
-                                Ya, saya yakin
-                            </button>
-                            <button @click="closeModalDelete" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
-                                Tidak, batalkan
-                            </button>
+                    <form @submit.prevent="ubahData">
+                        <div class="grid grid-cols-2 gap-4 mx-4">
+                            <div>
+                                <label for="branch_code" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nomor</label>
+                                <input v-model="form.branch_code" type="text" id="branch_code" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.branch_code" />
+                            </div>
+                            <div>
+                                <label for="branch_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Cabang</label>
+                                <input v-model="form.branch_name" type="text" id="branch_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.branch_name" />
+                            </div>
+                            <div>
+                                <label for="branch_address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat Cabang</label>
+                                <input v-model="form.branch_address" type="text" id="branch_address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.branch_address" />
+                            </div>
+                            <div>
+                                <label for="status" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status Cabang</label>
+                                <select id="status" v-model="form.status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                    <option value="" selected disabled>Pilih</option>
+                                    <option value="Aktif">Aktif</option>
+                                    <option value="Tidak Aktif">Tidak Aktif</option>
+                                </select>
+                                <InputError class="mt-2" :message="form.errors.status" />
+                            </div>
+                            <div class="col-span-2">
+                                <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Profil Cabang</label>
+                                <Textarea :row="9" v-model="form.description" :placeholder="'Silahkan masukkan profil cabang disini...'" />
+                                <InputError class="mt-2" :message="form.errors.description" />
+                            </div>
                         </div>
+                        <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                            <button :class="{ 'opacity-25': form.processing }" :disabled="form.processing" type="submit" class="text-white uppercase bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Ubah</button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
+            <!-- Modal Hapus Data  -->
+            <Modal :show="showModalDelete" @close="closeModalDelete">
+                <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                    <div class="p-4 md:p-5 text-center">
+                        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                        </svg>
+                        <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+                            Apakah anda yakin ingin menghapus cabang ini ?
+                        </h3>
+                        <button @click="hapusData" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
+                            Ya, saya yakin
+                        </button>
+                        <button @click="closeModalDelete" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                            Tidak, batalkan
+                        </button>
                     </div>
-                </Modal>
+                </div>
+            </Modal>
         </div>
     </AuthenticatedLayout>
 </template>

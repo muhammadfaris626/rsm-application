@@ -4,41 +4,27 @@ namespace Database\Seeders;
 
 use App\Models\ProductCategory;
 use App\Models\UpdateProductCategoryHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
-class ProductCategorySeeder extends Seeder
-{
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
-    {
-        $data = [
-            [
-                'product_category_code' => 'RSM001',
-                'product_category_name' => 'Kategori Produk 1'
-            ],
-            [
-                'product_category_code' => 'RSM002',
-                'product_category_name' => 'Kategori Produk 2'
-            ],
-        ];
-        foreach ($data as $key => $value) {
-            ProductCategory::create($value);
+class ProductCategorySeeder extends Seeder {
+
+    public function run(): void {
+        $sqlPath = database_path('seeders/sql/product_categories.sql');
+        if (File::exists($sqlPath)) {
+            $sql = File::get($sqlPath);
+            DB::unprepared($sql);
+            $this->command->info('ProductCategorySeeder: Data kategori produk berhasil diinsert dari file SQL.');
+        } else {
+            $this->command->error('ProductCategorySeeder: File SQL tidak ditemukan.');
         }
-        $history = [
-            [
-                'product_category_id' => 1,
-                'user_id' => 1,
-            ],
-            [
-                'product_category_id' => 2,
-                'user_id' => 1,
-            ]
-        ];
-        foreach ($history as $key => $value) {
-            UpdateProductCategoryHistory::create($value);
+        $data = ProductCategory::all();
+        foreach ($data as $key => $value) {
+            UpdateProductCategoryHistory::create([
+                'product_category_id' => $value->id,
+                'user_id' => 1
+            ]);
         }
     }
 }

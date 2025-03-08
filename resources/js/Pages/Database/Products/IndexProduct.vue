@@ -13,6 +13,7 @@
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
+    import axios from 'axios';
     defineProps(["fetchData", 'productCategories']);
     const form = useForm({
         id: "",
@@ -21,6 +22,7 @@
         last_update: "",
         created_at: "",
         updated_at: "",
+        fileUpload: ""
     });
     const { hasPermission } = usePermission();
     let search = ref(usePage().props.search), pageNumber = ref(1);
@@ -41,12 +43,16 @@
     });
 
     const showModalCreate = ref(false);
+    const showModalUpload = ref(false);
     const showModalRead = ref(false);
     const showModalUpdate = ref(false);
     const showModalDelete = ref(false);
 
     const closeModalCreate = () => {
         showModalCreate.value = false;
+    }
+    const closeModalUpload = () => {
+        showModalUpload.value = false;
     }
     const closeModalRead = () => {
         showModalRead.value = false;
@@ -84,6 +90,7 @@
         showModalDelete.value = true;
         form.id = data.id;
     }
+    const modalUpload = () => { showModalUpload.value = true; }
 
     const tambahData = () => {
         form.post(route('products.store'), {
@@ -91,6 +98,15 @@
                 form.reset();
                 form.clearErrors();
                 showModalCreate.value = false;
+            }
+        });
+    }
+    const uploadData = () => {
+        form.post(route('product.upload'), {
+            onSuccess: () => {
+                form.reset();
+                form.clearErrors();
+                showModalUpload.value = false;
             }
         });
     }
@@ -120,6 +136,24 @@
 
     const checkPositionStatus = () => {
         refPositionStatus.value = form.position_status;
+    }
+
+    const downloadFile = async () => {
+        try {
+            const response = await axios.get('/api/download-format-barang', {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'format-barang.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Gagal mengunduh file: ', error);
+        }
     }
 </script>
 
@@ -162,6 +196,39 @@
                 </div>
                 <div>
                     <template v-if="hasPermission('product: create')">
+                        <button @click="downloadFile" class="mr-2 px-5 py-2.5 text-sm font-medium text-white inline-flex items-center bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 rounded-lg text-center dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-1">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Unduh Format
+                        </button>
+                        <button @click="modalUpload()" class="mr-2 px-5 py-2.5 text-sm font-medium text-white inline-flex items-center bg-yellow-700 hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 rounded-lg text-center dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-1">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                            </svg>
+                            Upload
+                        </button>
+                        <Modal :show="showModalUpload" @close="closeModalUpload">
+                            <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                                        UNGGAH BARANG
+                                    </h3>
+                                </div>
+                                <form @submit.prevent="uploadData">
+                                    <div class="grid grid-cols-2 gap-2 px-4 py-2">
+                                        <div>
+                                            <InputLabel for="product_category_code" value="Unggah Berkas" />
+                                            <input @input="form.fileUpload = $event.target.files[0]" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" aria-describedby="file_input_help" id="file_input" type="file">
+                                            <InputError class="mt-2" :message="form.errors.fileUpload" />
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                                        <button :class="{ 'opacity-25': form.processing }" :disabled="form.processing" type="submit" class="text-white uppercase bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Unggah</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </Modal>
                         <button @click="modalTambahData()" class="px-5 py-2.5 text-sm font-medium text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

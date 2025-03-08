@@ -25,7 +25,7 @@ class BranchRequest extends FormRequest
             'branch_code' => ['required'],
             'branch_name' => ['required'],
             'branch_address' => ['required'],
-            'description' => ['required'],
+            'description' => [''],
             'status' => ['required']
         ];
     }

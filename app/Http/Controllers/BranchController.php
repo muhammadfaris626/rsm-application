@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\BranchRequest;
 use App\Http\Resources\BranchResource;
+use App\Imports\BranchImport;
 use App\Models\Branch;
 use App\Models\UpdateBranchHistory;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 
 class BranchController extends Controller
 {
@@ -101,6 +103,18 @@ class BranchController extends Controller
         Session::flash('toast', [
             'message' => 'Data berhasil dihapus.'
         ]);
+        return back();
+    }
+
+    public function upload(Request $request): RedirectResponse {
+        $request->validate([
+            'fileUpload' => 'required|mimes:xlsx,xls|mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
+        ], [
+            'fileUpload.required' => 'Kolom unggah berkas wajib diisi.',
+            'fileUpload.mimes' => 'Berkas yang diunggah harus berupa file Excel (xlsx, xls).'
+        ]);
+        $userId = Auth::id();
+        Excel::import(new BranchImport($userId), $request->file('fileUpload'));
         return back();
     }
 }

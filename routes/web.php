@@ -73,9 +73,12 @@ Route::middleware('auth')->group(function () {
     });
     Route::prefix('/database')->group(function() {
         Route::resource('/branches', BranchController::class);
+        Route::post('/branchUpload', [BranchController::class, 'upload'])->name('branch.upload');
         Route::resource('/employees', EmployeeController::class);
         Route::resource('/productCategories', ProductCategoryController::class);
+        Route::post('/productCategoryUpload', [ProductCategoryController::class, 'upload'])->name('productCategory.upload');
         Route::resource('/products', ProductController::class);
+        Route::post('/productUpload', [ProductController::class, 'upload'])->name('product.upload');
         Route::resource('/expenditures', ExpenditureController::class);
         Route::resource('/positions', PositionController::class);
         Route::resource('/suppliers', SupplierController::class);

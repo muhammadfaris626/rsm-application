@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ApiAttendanceController;
+use App\Http\Controllers\Api\ApiDownloadFormatController;
 use App\Http\Controllers\Api\ApiEmployeeAttendanceController;
 use App\Http\Controllers\Api\ApiLocationController;
 use App\Http\Controllers\Api\ApiMutationController;
@@ -32,3 +33,7 @@ Route::get('/employee-attendances/{id}', [ApiEmployeeAttendanceController::class
 Route::get('/employee-mutations', [ApiMutationController::class, 'index']);
 // Employee Termination
 Route::get('/employee-terminations', [ApiTerminationController::class, 'index']);
+
+Route::get('/download-format-kategori-barang', [ApiDownloadFormatController::class, 'downloadFormatCategoryProduct']);
+Route::get('/download-format-barang', [ApiDownloadFormatController::class, 'downloadFormatProduct']);
+Route::get('/download-format-cabang', [ApiDownloadFormatController::class, 'downloadFormatBranch']);

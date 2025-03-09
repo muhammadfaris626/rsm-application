@@ -19,8 +19,7 @@
     </head>
     <body class="font-sans antialiased bg-gray-100">
         @inertia
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js"></script>
-        {{-- <script type="text/javascript" src="https://unpkg.com/default-passive-events"></script> --}}
+        {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js"></script> --}}
     </body>
 </html>

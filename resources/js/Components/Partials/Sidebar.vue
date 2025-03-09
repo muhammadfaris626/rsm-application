@@ -220,7 +220,7 @@
                     </button>
                     <ul id="karyawan" class="py-2"
                         :class="{ hidden: !isRouteActive([
-                            'performances.index', 'attendance.index',
+                            'performances.index', 'attendances.index',
                             'mutations.index', 'mutations.create', 'mutations.edit', 'mutations.show',
                             'terminations.index', 'terminations.create', 'terminations.edit', 'terminations.show'
                         ]) }"

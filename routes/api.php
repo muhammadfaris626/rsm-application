@@ -37,3 +37,6 @@ Route::get('/employee-terminations', [ApiTerminationController::class, 'index'])
 Route::get('/download-format-kategori-barang', [ApiDownloadFormatController::class, 'downloadFormatCategoryProduct']);
 Route::get('/download-format-barang', [ApiDownloadFormatController::class, 'downloadFormatProduct']);
 Route::get('/download-format-cabang', [ApiDownloadFormatController::class, 'downloadFormatBranch']);
+
+Route::get('/notifications/count', [NotificationController::class, 'getNotificationCount']);
+Route::post('/notifications/update', [NotificationController::class, 'updateNotificationStatus']);

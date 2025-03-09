@@ -4,10 +4,10 @@
     import NavigationLink from '@/Components/Custom/NavigationLink.vue';
     import { Link } from '@inertiajs/vue3';
     import { usePage } from "@inertiajs/vue3";
-    import { useNotifications } from '@/Composables/useNotifications';
-    import { computed } from 'vue';
+    // import { useNotifications } from '@/Composables/useNotifications';
+    import { computed, onMounted, ref } from 'vue';
+    import axios from 'axios';
     const { hasPermission } = usePermission();
-    const countPermissions = usePage().props.auth.user.permissions.length;
     const isRouteActive = (routes) => {
         return routes.some(route => window.route().current(route));
     }
@@ -16,7 +16,22 @@
         const routeEnableValues = Object.values(routes);
         return routeEnableValues.some(route => routeValues.includes(route));
     }
-    const { notificationCount, orderRequestCount, returnRequestCount, fetchNotifications } = useNotifications();
+    const orderCount = ref(0);
+    const returnCount = ref(0);
+
+    const fetchNotifications = async () => {
+        try {
+            const response = await axios.get('/api/notifications/count');
+            orderCount.value = response.data.order_count;
+            returnCount.value = response.data.return_count;
+        } catch (error) {
+            console.error("Gagal mengambil notifikasi:", error);
+        }
+    };
+
+    // Panggil saat halaman dimuat
+    onMounted(fetchNotifications);
+    // const { notificationCount, orderRequestCount, returnRequestCount, fetchNotifications } = useNotifications();
     // const computedNotificationCount = computed(() => notificationCount.value);
 </script>
 
@@ -52,7 +67,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                         </svg>
                         <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Produk</span>
-                        <span v-if="notificationCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ notificationCount }}</span>
+                        <!-- <span v-if="notificationCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ notificationCount }}</span> -->
                         <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
                         </svg>
@@ -83,7 +98,7 @@
                             <li>
                                 <SidebarLink :href="route('requestOrders.index')" :active="isRouteActive(['requestOrders.index', 'requestOrders.create', 'requestOrders.edit'])">
                                     Permintaan Stok
-                                    <span v-if="orderRequestCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ orderRequestCount }}</span>
+                                    <!-- <span v-if="orderRequestCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ orderRequestCount }}</span> -->
                                 </SidebarLink>
                             </li>
                         </template>
@@ -91,7 +106,7 @@
                             <li>
                                 <SidebarLink :href="route('requestReturns.index')" :active="isRouteActive(['requestReturns.index', 'requestReturns.create', 'requestReturns.edit'])">
                                     Permintaan Return
-                                    <span v-if="returnRequestCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ returnRequestCount }}</span>
+                                    <!-- <span v-if="returnRequestCount > 0" class="inline-flex items-center justify-center w-3 h-3 p-3 ms-3 text-sm font-medium text-white bg-red-500 rounded-full dark:bg-blue-900 dark:text-blue-300 mr-2">{{ returnRequestCount }}</span> -->
                                 </SidebarLink>
                             </li>
                         </template>

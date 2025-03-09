@@ -1,1 +1,0 @@
-import{f as t,o as e,t as o,r as n}from"./app-DSoPxBVO.js";const l={class:"block mb-2 text-sm font-medium text-gray-900 dark:text-white"},r={key:0},c={key:1},m={__name:"InputLabel",props:{value:{type:String}},setup(s){return(a,i)=>(e(),t("label",l,[s.value?(e(),t("span",r,o(s.value),1)):(e(),t("span",c,[n(a.$slots,"default")]))]))}};export{m as _};

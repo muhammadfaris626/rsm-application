@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class RequestReturn extends Model
 {
@@ -18,6 +20,18 @@ class RequestReturn extends Model
         'date',
         'status',
     ];
+
+    protected static function boot() {
+        parent::boot();
+
+        static::updated(function ($model) {
+            // Hapus cache notifikasi saat ada perubahan status
+            $user = Auth::user();
+            if ($user) {
+                Cache::forget("notification_count_{$user->id}_{$user->roles[0]['name']}");
+            }
+        });
+    }
 
     public function requestOrder(): BelongsTo {
         return $this->belongsTo(RequestOrder::class, 'request_order_id');

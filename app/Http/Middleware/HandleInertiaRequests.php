@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\MenuHelper;
 use App\Http\Resources\UserSharedResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware

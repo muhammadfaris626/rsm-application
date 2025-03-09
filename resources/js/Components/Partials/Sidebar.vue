@@ -4,8 +4,7 @@
     import NavigationLink from '@/Components/Custom/NavigationLink.vue';
     import { Link } from '@inertiajs/vue3';
     import { usePage } from "@inertiajs/vue3";
-    // import { useNotifications } from '@/Composables/useNotifications';
-    import { computed, onMounted, ref } from 'vue';
+    import { onMounted, ref } from 'vue';
     import axios from 'axios';
     const { hasPermission } = usePermission();
     const isRouteActive = (routes) => {
@@ -28,11 +27,7 @@
             console.error("Gagal mengambil notifikasi:", error);
         }
     };
-
-    // Panggil saat halaman dimuat
     onMounted(fetchNotifications);
-    // const { notificationCount, orderRequestCount, returnRequestCount, fetchNotifications } = useNotifications();
-    // const computedNotificationCount = computed(() => notificationCount.value);
 </script>
 
 <template>

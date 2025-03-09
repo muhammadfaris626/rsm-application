@@ -30,7 +30,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TerminationController;
 use App\Http\Controllers\UserController;
-
+use App\Http\Middleware\InjectSidebarMenu;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 

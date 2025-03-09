@@ -1,14 +1,8 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { ref, computed, watch, onMounted } from 'vue';
-    import { usePage, useForm, router, Head } from '@inertiajs/vue3';
-    import Table from '@/Components/Custom/Table.vue';
-    import TableRow from '@/Components/Custom/TableRow.vue';
-    import TableHeaderCell from '@/Components/Custom/TableHeaderCell.vue';
-    import TableDataCell from '@/Components/Custom/TableDataCell.vue';
-    import TablePagination from '@/Components/Custom/TablePagination.vue';
+    import { router, Head } from '@inertiajs/vue3';
     import VueMultiselect from "vue-multiselect";
-    import InputLabel from '@/Components/InputLabel.vue';
     import TextInput from "@/Components/TextInput.vue";
     defineProps(['branches', 'sales', 'employeeActive', 'branchActive', 'expenditures', 'profile', 'userRoleVisitor']);
     const selectBranch = ref(''), selectStartDate = ref(''), selectEndDate = ref('');
@@ -28,7 +22,7 @@
         router.visit(updatedFilterUrl, {
             preserveScroll: true,
             preserveState: true,
-            replace: true
+            replace: true,
         });
     });
     onMounted(() => {
@@ -43,12 +37,6 @@
     }
 
 </script>
-<script>
-export default {
-  inheritAttrs: false
-}
-</script>
-
 
 <template>
     <Head title="Beranda" />

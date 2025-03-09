@@ -1,32 +1,32 @@
 <script setup>
-import { ref } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
-import { onMounted } from 'vue';
-import { initFlowbite } from 'flowbite';
-import Sidebar from '@/Components/Partials/Sidebar.vue';
-import Navbar from '@/Components/Partials/Navbar.vue';
-import Toast from '@/Components/Custom/Toast.vue';
+    import { onMounted, ref } from "vue";
+    import { initFlowbite } from "flowbite";
+    import Sidebar from "@/Components/Partials/Sidebar.vue";
+    import Toast from "@/Components/Custom/Toast.vue";
+    import LoadingPopup from "@/Components/Custom/LoadingPopup.vue";
+    import { router } from "@inertiajs/vue3";
 
-// initialize components based on data attribute selectors
-onMounted(() => {
-    initFlowbite();
-})
+    const isLoading = ref(false);
+    onMounted(() => {
+        initFlowbite();
+        // Event untuk mendeteksi saat navigasi halaman dimulai
+        router.on("start", () => {
+            isLoading.value = true;
+        });
 
-const showingNavigationDropdown = ref(false);
+        // Event ketika navigasi selesai
+        router.on("finish", () => {
+            setTimeout(() => {
+                isLoading.value = false;
+            }, 500); // Bisa disesuaikan jika perlu delay loading
+        });
+    });
 </script>
 
 <template>
-    <!-- Navbar -->
-    <!-- <Navbar /> -->
-    <!-- Sidebar -->
     <Sidebar />
-    <!-- Content -->
     <Toast />
+    <LoadingPopup :loading="isLoading" />
     <div class="sm:ml-64">
         <div class="p-4">
             <main>

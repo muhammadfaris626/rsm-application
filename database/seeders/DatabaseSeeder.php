@@ -20,9 +20,10 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             BranchSeeder::class,
             LocationSeeder::class,
+            EmployeeSeeder::class,
 
 
-            // EmployeeSeeder::class,
+
             // ExpenditureSeeder::class,
             // PositionSeeder::class,
             // SupplierSeeder::class,

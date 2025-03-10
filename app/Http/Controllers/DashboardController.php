@@ -63,23 +63,30 @@ class DashboardController extends Controller {
                         'date' => Carbon::parse($expenditure->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
                     ];
                 });
+            // $employeeActive = Employee::query()
+            //     ->where('status', 'Aktif')
+            //     ->where('branch_id', $employee->branch_id)
+            //     ->when($request->start_date && $request->end_date, function($query) use($request) {
+            //         $query->whereBetween('updated_at', [
+            //             Carbon::parse($request->start_date)->startOfDay(),
+            //             Carbon::parse($request->end_date)->endOfDay(),
+            //         ]);
+            //     }, function($query) {
+            //         $query->whereDate('updated_at', Carbon::today());
+            //     })
+            //     ->get()
+            //     ->map(function ($employee) {
+            //         return [
+            //             'total' => $employee
+            //         ];
+            //     });
             $employeeActive = Employee::query()
                 ->where('status', 'Aktif')
                 ->where('branch_id', $employee->branch_id)
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
+                ->when($request->branch, function($query) use($request) {
+                    $query->where('branch_id', $request->branch);
                 })
-                ->get()
-                ->map(function ($employee) {
-                    return [
-                        'total' => $employee
-                    ];
-                });
+                ->count();
             $branchActive = Branch::query()
                 ->where('status', 'Aktif')
                 ->get()
@@ -130,25 +137,31 @@ class DashboardController extends Controller {
                         'date' => Carbon::parse($expenditure->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
                     ];
                 });
+            // $employeeActive = Employee::query()
+            //     ->where('status', 'Aktif')
+            //     ->when($request->start_date && $request->end_date, function($query) use($request) {
+            //         $query->whereBetween('updated_at', [
+            //             Carbon::parse($request->start_date)->startOfDay(),
+            //             Carbon::parse($request->end_date)->endOfDay(),
+            //         ]);
+            //     }, function($query) {
+            //         $query->whereDate('updated_at', Carbon::today());
+            //     })
+            //     ->when($request->branch, function($query) use($request) {
+            //         $query->where('branch_id', $request->branch);
+            //     })
+            //     ->get()
+            //     ->map(function ($employee) {
+            //         return [
+            //             'total' => $employee
+            //         ];
+            //     });
             $employeeActive = Employee::query()
                 ->where('status', 'Aktif')
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
-                })
                 ->when($request->branch, function($query) use($request) {
                     $query->where('branch_id', $request->branch);
                 })
-                ->get()
-                ->map(function ($employee) {
-                    return [
-                        'total' => $employee
-                    ];
-                });
+                ->count();
             $branchActive = Branch::query()
                 ->where('status', 'Aktif')
                 ->get()
@@ -172,7 +185,7 @@ class DashboardController extends Controller {
             'branches' => BranchResource::collection(Branch::where('status', 'Aktif')->get()),
             'sales' => $sales,
             'expenditures' => $expenditures,
-            'employeeActive' => $employeeActive->count(),
+            'employeeActive' => $employeeActive,
             'branchActive' => $branchActive->count(),
             'profile' => $profileBranch,
             'userRoleVisitor' => $userRole

@@ -133,11 +133,20 @@
     const checkPositionStatus = () => {
         refPositionStatus.value = form.position_status;
     }
+
+
+    const formattedEmployees = computed(() => usePage().props.employees.map(
+        employee => ({
+            ...employee,
+            label: `[ ${employee.branch_id[0].branch_name} ] ${employee.name}`
+        })
+    ));
 </script>
 
 <template>
     <Head title="Struktur Manajemen" />
     <AuthenticatedLayout>
+        <!-- {{ employees }} -->
         <div class="grid grid-cols-1 h-full">
             <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
                 <nav class="flex" aria-label="Breadcrumb">
@@ -193,10 +202,10 @@
                                             <InputLabel for="employee_id" value="Nama Karyawan" />
                                             <VueMultiselect
                                                 v-model="form.employee_id"
-                                                :options="employees"
+                                                :options="formattedEmployees"
                                                 :close-on-select="true"
                                                 placeholder="Pilih"
-                                                label="name"
+                                                label="label"
                                                 track-by="id"
                                             />
                                             <InputError class="mt-2" :message="form.errors.employee_id" />

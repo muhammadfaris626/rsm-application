@@ -23,7 +23,6 @@ class ProductController extends Controller
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('product_name', 'LIKE', '%' . $search . '%')
-                ->orWhere('serial_barcode', 'LIKE', '%' . $search . '%')
                 ->orWhereHas('productCategory', function($query) use($search) {
                     $query->where('product_category_name', 'LIKE', '%' . $search . '%');
                 });

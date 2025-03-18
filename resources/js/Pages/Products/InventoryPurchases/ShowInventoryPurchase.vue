@@ -8,6 +8,7 @@
     import Textarea from '@/Components/Textarea.vue';
     import VueMultiselect from "vue-multiselect";
     import JsBarcode from "jsbarcode";
+    import QrcodeVue, { QrcodeCanvas, QrcodeSvg } from 'qrcode.vue';
 
     const props = defineProps({
         inventoryPurchase: {
@@ -211,7 +212,7 @@
                                         Serial Barcode
                                     </th>
                                     <th scope="col" class="px-6 py-3">
-                                        Barcode
+                                        QrCode
                                     </th>
                                 </tr>
                             </thead>
@@ -245,7 +246,7 @@
                                         {{ data.serial_barcode }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <svg :id="`barcode-${index}`"></svg>
+                                        <QrcodeVue :value="data.serial_barcode" :size="50" level="H" render-as="svg" />
                                     </td>
                                 </tr>
                             </tbody>

@@ -24,14 +24,14 @@ class DatabaseSeeder extends Seeder
 
 
 
-            // ExpenditureSeeder::class,
-            // PositionSeeder::class,
-            // SupplierSeeder::class,
+            ExpenditureSeeder::class,
+            PositionSeeder::class,
+            SupplierSeeder::class,
             // ManagementStructureSeeder::class,
 
-            // InventoryPurchaseSeeder::class,
-            // OperationalCenterSeeder::class,
-            // OperationalBranchSeeder::class,
+            InventoryPurchaseSeeder::class,
+            OperationalCenterSeeder::class,
+            OperationalBranchSeeder::class,
 
             // RequestOrderSeeder::class,
             // BranchProductSeeder::class,

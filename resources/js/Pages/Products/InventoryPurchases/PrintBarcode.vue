@@ -1,18 +1,17 @@
 <script setup>
-import { Link, Head, useForm, usePage } from '@inertiajs/vue3';
-import JsBarcode from "jsbarcode";
-import { ref, onMounted, nextTick, computed } from 'vue';
+import { onMounted, nextTick, computed } from "vue";
+import QrcodeVue from 'qrcode.vue';
 
 const props = defineProps({
     selectedCheckbox: {
-        type: Array
+        type: Array,
+        required: true
     },
     jumlahCetak: {
-        type: String
+        type: String,
+        required: true
     }
 });
-
-const barcodeCanvas = ref(null);
 
 const repeatedBarcodes = computed(() => {
     return props.selectedCheckbox.flatMap(data => Array(Number(props.jumlahCetak)).fill(data));
@@ -20,30 +19,52 @@ const repeatedBarcodes = computed(() => {
 
 onMounted(() => {
     nextTick(() => {
-        repeatedBarcodes.value.forEach((data, index) => {
-            const barcodeElement = document.getElementById(`barcode-${index}`);
-            if (barcodeElement) {
-                JsBarcode(barcodeElement, data, {
-                    format: "CODE128",
-                    lineColor: "#000",
-                    width: 2,
-                    height: 50,
-                    displayValue: true,
-                });
-            }
-        });
-        // Trigger the print dialog after barcodes are generated
-        document.body.style.backgroundColor = 'white';
-        window.print();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
     });
 });
 </script>
 
 <template>
-    <Head title="Cetak Barcode" />
-    <div class="grid grid-cols-3 gap-4 m-5">
-        <div v-for="(data, index) in repeatedBarcodes" :key="index" class="flex justify-center items-center">
-            <svg :id="`barcode-${index}`" class="w-full h-20"></svg>
+    <div class="page">
+        <div class="barcode-container">
+            <div v-for="(data, index) in repeatedBarcodes" :key="index" class="barcode-wrapper">
+                <QrcodeVue :value="data" :size="99" level="H" render-as="svg" />
+            </div>
         </div>
     </div>
 </template>
+
+<style>
+@media print {
+    @page {
+        size: 50mm 30mm landscape; /* Perbesar ukuran agar muat 3 QR Code */
+        margin: 0;
+    }
+
+    body, .page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        margin-top: 5px;
+    }
+
+    .barcode-container {
+        display: flex;
+        flex-wrap: wrap; /* Agar QR Code turun ke bawah jika lebih dari 3 */
+        justify-content: center; /* Pusatkan QR Code */
+        align-items: center;
+        max-width: 100%; /* Batasi agar tidak lebih dari 3 QR Code per baris */
+        gap: 80px; /* Tambahkan jarak antar QR Code */
+    }
+
+    .barcode-wrapper {
+        text-align: center;
+        width: calc(100% / 4 - 5px); /* Maksimal 3 QR Code per baris */
+        margin: 2px;
+    }
+}
+</style>

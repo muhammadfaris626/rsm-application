@@ -4,46 +4,47 @@ namespace Database\Seeders;
 
 use App\Models\Position;
 use App\Models\UpdatePositionHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class PositionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $data = [
-            [
-                'position_name' => 'Jabatan 1'
-            ],
-            [
-                'position_name' => 'Jabatan 2'
-            ],
-            [
-                'position_name' => 'Teknisi'
-            ],
-        ];
-        foreach ($data as $key => $value) {
-            Position::create($value);
+        $user = User::first();
+
+        if (!$user) {
+            $this->command->warn('PositionSeeder: No user found. Creating admin user...');
+            $user = User::create([
+                'name' => 'Administrator',
+                'username' => 'admin',
+                'email' => 'admin@rsm.com',
+                'password' => \Hash::make('password')
+            ]);
         }
-        $history = [
-            [
-                'position_id' => 1,
-                'user_id' => 1
-            ],
-            [
-                'position_id' => 2,
-                'user_id' => 1
-            ],
-            [
-                'position_id' => 3,
-                'user_id' => 1
-            ],
+
+        $positions = [
+            'Manager', 'Supervisor', 'Staff', 'Teknisi', 'Sales',
+            'Marketing', 'HR', 'Finance', 'Accounting', 'IT Support',
+            'Admin', 'Operator', 'Driver', 'Security', 'Cleaning Service',
+            'Receptionist', 'Customer Service', 'Cashier', 'Warehouse', 'Logistics',
+            'Quality Control', 'Production', 'Maintenance', 'Engineer', 'Designer',
+            'Developer', 'Analyst', 'Consultant', 'Coordinator', 'Assistant',
+            'Director', 'VP', 'General Manager', 'Branch Manager', 'Area Manager',
+            'Regional Manager', 'Team Leader', 'Senior Staff', 'Junior Staff', 'Intern',
+            'Freelancer', 'Contractor', 'Advisor', 'Specialist', 'Expert',
+            'Trainer', 'Instructor', 'Mentor', 'Coach', 'Facilitator'
         ];
-        foreach ($history as $key => $value) {
-            UpdatePositionHistory::create($value);
+
+        for ($i = 0; $i < 50; $i++) {
+            $position = Position::create([
+                'position_name' => $positions[$i]
+            ]);
+
+            UpdatePositionHistory::create([
+                'position_id' => $position->id,
+                'user_id' => $user->id
+            ]);
         }
     }
 }

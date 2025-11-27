@@ -61,7 +61,7 @@ class RequestReturnController extends Controller {
 
     public function store(RequestReturnRequest $request): RedirectResponse {
         Gate::authorize('create', RequestReturn::class);
-        $count = (RequestReturn::max('id') + 1);
+        $count = (RequestReturn::max('id') ?? 0) + 1;
         $rrFormat = "RR-RSM-" . date('mdY') . "-" . str_pad($count, 4, '0', STR_PAD_LEFT);
 
         $create = RequestReturn::create([
@@ -151,22 +151,26 @@ class RequestReturnController extends Controller {
         if ($request->approval == 'Pengiriman barang') {
             for ($i=0; $i < count($request->listData); $i++) {
                 $check = BranchProduct::where('id', $request->listData[$i]['branch_product_id'])->first();
-                $check->update([
-                    'quantity' => $check->quantity - $request->listData[$i]['quantity']
-                ]);
+                if ($check) {
+                    $check->update([
+                        'quantity' => $check->quantity - $request->listData[$i]['quantity']
+                    ]);
+                }
             }
             Session::flash('toast', ['message' => 'Permintaan return telah dikirim.']);
         } elseif ($request->approval == 'Selesai') {
             for ($i=0; $i < count($request->listData); $i++) {
                 $check = CenterStock::where('serial_barcode', $request->listData[$i]['serial_barcode'])->first();
-                $check->update([
-                    'stock' => $check->stock + $request->listData[$i]['quantity']
-                ]);
+                if ($check) {
+                    $check->update([
+                        'stock' => $check->stock + $request->listData[$i]['quantity']
+                    ]);
+                }
             }
             Session::flash('toast', ['message' => 'Permintaan return telah selesai.']);
         } else {
             $messages = [
-                'Tiba di lokasi' => 'Permintaan return telah diba di lokasi.',
+                'Tiba di lokasi' => 'Permintaan return telah tiba di lokasi.',
                 'Pengecekan barang' => 'Proses pengecekan barang.'
             ];
             Session::flash('toast', ['message' => $messages[$request->approval] ?? 'Status tidak dikenali.']);

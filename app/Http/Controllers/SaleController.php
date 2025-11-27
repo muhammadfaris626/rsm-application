@@ -29,7 +29,12 @@ class SaleController extends Controller
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('invoice_number', 'LIKE', '%' . $search . '%')
-                ->orWhere('date', 'LIKE', '%' . $search . '%');
+                ->orWhere('date', 'LIKE', '%' . $search . '%')
+                ->orWhereHas('managementStructure', function($q) use($search) {
+                    $q->whereHas('employee', function($q2) use($search) {
+                        $q2->where('name', 'LIKE', '%' . $search . '%');
+                    });
+                });
         });
     }
 
@@ -37,12 +42,59 @@ class SaleController extends Controller
         Gate::authorize('viewAny', Sale::class);
         $user = Auth::user();
         $employee = Employee::where('employee_number', $user->username)->first();
-        $searchQuery = Sale::query()->when($user->roles[0]['name'] !== 'root', fn($query) => $query->where('branch_id', $employee->branch_id))->latest();
+        
+        $searchQuery = Sale::query()
+            ->when($user->roles[0]['name'] !== 'root' && $employee, fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->when($request->branch, function($query) use($request) {
+                $query->where('branch_id', $request->branch);
+            })
+            ->when($request->start_date && $request->end_date, function($query) use($request) {
+                $query->whereBetween('date', [
+                    $request->start_date,
+                    $request->end_date
+                ]);
+            })
+            ->when($request->technician, function($query) use($request) {
+                $query->where('management_structure_id', $request->technician);
+            })
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
+        
         $data = SaleResource::collection($searchQuery->paginate(12));
+        
+        // Get branches for filter
+        $branches = $user->roles[0]['name'] == 'root' 
+            ? Branch::where('status', 'Aktif')->get() 
+            : ($employee ? Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get() : collect());
+        
+        // Get technicians for filter
+        $teknisiPosition = Position::where('position_name', 'Teknisi')->first();
+        $techniciansQuery = ManagementStructure::query();
+        if ($user->roles[0]['name'] !== 'root' && $employee) {
+            $techniciansQuery->where('branch_id', $employee->branch_id);
+        }
+        if ($teknisiPosition) {
+            $techniciansQuery->where('position_id', $teknisiPosition->id);
+        }
+        $techniciansCollection = ManagementStructureResource::collection($techniciansQuery->get());
+        $technicians = [];
+        foreach ($techniciansCollection as $item) {
+            $itemArray = $item->toArray(request());
+            $employeeName = isset($itemArray['employee_id'][0]['name']) ? $itemArray['employee_id'][0]['name'] : 'N/A';
+            $itemArray['label'] = $employeeName;
+            $technicians[] = $itemArray;
+        }
+        
         return Inertia::render('Products/Sales/IndexSale', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
+            'branches' => BranchResource::collection($branches),
+            'technicians' => $technicians,
+            'selectedBranch' => $request->branch ?? null,
+            'selectedStartDate' => $request->start_date ?? null,
+            'selectedEndDate' => $request->end_date ?? null,
+            'selectedTechnician' => $request->technician ?? null,
         ]);
     }
 
@@ -50,10 +102,14 @@ class SaleController extends Controller
         Gate::authorize('create', Sale::class);
         $employee = Employee::where('employee_number', Auth::user()->username)->first();
         $branch = Auth::user()->roles[0]['name'] == 'root' ? Branch::all() : Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get();
+        $teknisiPosition = Position::where('position_name', 'Teknisi')->first();
+        $employees = $teknisiPosition 
+            ? ManagementStructureResource::collection(ManagementStructure::where('branch_id', $employee->branch_id)->where('position_id', $teknisiPosition->id)->get())
+            : ManagementStructureResource::collection(collect());
         return Inertia::render('Products/Sales/CreateSale', [
             'branches' => BranchResource::collection($branch),
             'products' => BranchProductResource::collection(BranchProduct::where('branch_id', $employee->branch_id)->with('product')->get()),
-            'employees' => ManagementStructureResource::collection(ManagementStructure::where('branch_id', $employee->branch_id)->where('position_id', Position::where('position_name', 'Teknisi')->first()->id)->get()),
+            'employees' => $employees,
             'invoice' => 'INV-P-RSM-' . date('mdY') . '-XXXX'
         ]);
     }

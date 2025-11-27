@@ -65,79 +65,91 @@
 <template>
     <Head title="Barang" />
     <AuthenticatedLayout>
-        <div class="grid grid-cols-1 h-full">
-            <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                        <li class="inline-flex items-center">
-                            <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                                </svg>
-                                Produk
-                            </a>
-                        </li>
-                        <li aria-current="page">
-                            <div class="flex items-center">
-                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Barang Pusat</span>
-                            </div>
-                        </li>
-                    </ol>
-                </nav>
+        <div class="grid grid-cols-1 h-full space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold">Barang Pusat</h1>
+                        <p class="text-indigo-100 mt-1">Kelola stok barang di pusat</p>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-white">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="flex justify-between my-3">
-                <div class="w-full md:w-1/4">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 start-0 flex items-center ps-2 pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500 dark:text-gray-400">
+
+            <!-- Search Bar -->
+            <div class="bg-white rounded-xl shadow-md p-4">
+                <div class="w-full md:w-1/3">
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
                         </div>
-                        <input v-model="search" type="text" id="input-group-1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-7 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Pencarian">
+                        <input 
+                            v-model="search" 
+                            type="text" 
+                            class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-4 py-2.5 transition-all duration-200 placeholder-gray-400" 
+                            placeholder="Cari barang, jumlah, atau barcode..."
+                        >
                     </div>
                 </div>
-                <div>
-
-                </div>
             </div>
-            <Table>
-                <template #header>
-                    <TableRow>
-                        <TableHeaderCell>NO</TableHeaderCell>
-                        <TableHeaderCell>BARANG</TableHeaderCell>
-                        <TableHeaderCell>JUMLAH BARANG</TableHeaderCell>
-                        <TableHeaderCell>SERIAL BARCODE</TableHeaderCell>
-                        <TableHeaderCell>TANGGAL</TableHeaderCell>
-                        <TableHeaderCell></TableHeaderCell>
-                    </TableRow>
-                </template>
-                <template #default>
-                    <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                        <TableDataCell :status="'number'">{{ index+1 }}</TableDataCell>
-                        <TableDataCell :status="'record'">{{ data.product_id[0]['product_name'] }}</TableDataCell>
-                        <TableDataCell :status="'record'">{{ data.stock }}</TableDataCell>
-                        <TableDataCell :status="'record'">{{ data.serial_barcode }}</TableDataCell>
-                        <TableDataCell :status="'record'">{{ data.updated_at }}</TableDataCell>
-                        <TableDataCell :status="'action'">
-                            <!-- Lihat Data  -->
-                            <template v-if="hasPermission('center-stock: read')">
-                                <button @click="modalLiatData(data)" class="text-white mr-1 bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm p-2 text-center inline-flex items-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800" type="button">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                    </svg>
-                                </button>
-                            </template>
-                        </TableDataCell>
-                    </TableRow>
-                </template>
-                <template #pagination>
-                    <TablePagination :pagination="fetchData.meta" />
-                </template>
-            </Table>
+
+            <!-- Table Card -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <Table>
+                    <template #header>
+                        <TableRow>
+                            <TableHeaderCell>NO</TableHeaderCell>
+                            <TableHeaderCell>BARANG</TableHeaderCell>
+                            <TableHeaderCell>JUMLAH BARANG</TableHeaderCell>
+                            <TableHeaderCell>SERIAL BARCODE</TableHeaderCell>
+                            <TableHeaderCell>TANGGAL</TableHeaderCell>
+                            <TableHeaderCell>AKSI</TableHeaderCell>
+                        </TableRow>
+                    </template>
+                    <template #default>
+                        <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-gray-600 transition-colors duration-150">
+                            <TableDataCell :status="'number'" class="font-semibold text-gray-600">{{ index+1 }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="font-semibold text-gray-900">{{ data.product_id[0]['product_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800">
+                                    {{ data.stock }}
+                                </span>
+                            </TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-600 font-mono text-sm">{{ data.serial_barcode }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-600">{{ data.updated_at }}</TableDataCell>
+                            <TableDataCell :status="'action'">
+                                <template v-if="hasPermission('center-stock: read')">
+                                    <button 
+                                        @click="modalLiatData(data)" 
+                                        class="text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm p-2 text-center inline-flex items-center shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-110" 
+                                        type="button"
+                                        title="Lihat Detail"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </button>
+                                </template>
+                            </TableDataCell>
+                        </TableRow>
+                    </template>
+                    <template #pagination>
+                        <div class="bg-gray-50 px-4 py-3">
+                            <TablePagination :pagination="fetchData.meta" />
+                        </div>
+                    </template>
+                </Table>
+            </div>
             <!-- Modal Lihat Data  -->
             <Modal :show="showModalRead" @close="closeModalRead">
                 <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">

@@ -2,49 +2,39 @@
 
 namespace Database\Seeders;
 
+use App\Models\Expenditure;
 use App\Models\OperationalCenter;
 use App\Models\UpdateOperationalCenterHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class OperationalCenterSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $data = [
-            [
-                'date' => '2025-01-10',
-                'expenditure_id' => 1,
-                'total_cost' => '100000',
-                'description' => 'Keterangan 1',
-                'user_id' => 1,
-            ],
-            [
-                'date' => '2025-01-11',
-                'expenditure_id' => 2,
-                'total_cost' => '150000',
-                'description' => 'Keterangan 2',
-                'user_id' => 1,
-            ],
-        ];
-        foreach ($data as $key => $value) {
-            OperationalCenter::create($value);
+        $faker = Faker::create('id_ID');
+        $expenditures = Expenditure::pluck('id')->toArray();
+        $users = User::pluck('id')->toArray();
+
+        if (empty($expenditures) || empty($users)) {
+            $this->command->warn('OperationalCenterSeeder: Required data not found. Skipping...');
+            return;
         }
-        $history = [
-            [
-                'op_center_id' => 1,
-                'user_id' => 1
-            ],
-            [
-                'op_center_id' => 2,
-                'user_id' => 1
-            ]
-        ];
-        foreach ($history as $key => $value) {
-            UpdateOperationalCenterHistory::create($value);
+
+        for ($i = 0; $i < 50; $i++) {
+            $operational = OperationalCenter::create([
+                'expenditure_id' => $faker->randomElement($expenditures),
+                'date' => $faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d'),
+                'total_cost' => $faker->numberBetween(100000, 10000000),
+                'description' => $faker->sentence(),
+                'user_id' => $faker->randomElement($users)
+            ]);
+
+            UpdateOperationalCenterHistory::create([
+                'op_center_id' => $operational->id,
+                'user_id' => $faker->randomElement($users)
+            ]);
         }
     }
 }

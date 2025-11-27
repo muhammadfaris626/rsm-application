@@ -4,39 +4,50 @@ namespace Database\Seeders;
 
 use App\Models\Expenditure;
 use App\Models\UpdateExpenditureHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class ExpenditureSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $data = [
-            [
-                'type_of_fee' => 'Jenis Biaya 1'
-            ],
-            [
-                'type_of_fee' => 'Jenis Biaya 2'
-            ],
-        ];
-        foreach ($data as $key => $value) {
-            Expenditure::create($value);
+        $faker = Faker::create('id_ID');
+        $user = User::first();
+
+        if (!$user) {
+            $this->command->warn('ExpenditureSeeder: No user found. Creating admin user...');
+            $user = User::create([
+                'name' => 'Administrator',
+                'username' => 'admin',
+                'email' => 'admin@rsm.com',
+                'password' => \Hash::make('password')
+            ]);
         }
-        $history = [
-            [
-                'expenditure_id' => 1,
-                'user_id' => 1,
-            ],
-            [
-                'expenditure_id' => 2,
-                'user_id' => 1,
-            ],
+
+        $feeTypes = [
+            'Operasional', 'Transportasi', 'Makanan', 'Akomodasi', 'Komunikasi',
+            'Listrik', 'Air', 'Internet', 'Telepon', 'Maintenance',
+            'Perbaikan', 'Upgrade', 'Training', 'Seminar', 'Workshop',
+            'Konsultasi', 'Legal', 'Pajak', 'Asuransi', 'Sewa',
+            'Pembelian', 'Inventaris', 'Peralatan', 'Bahan Baku', 'Bahan Penolong',
+            'Marketing', 'Promosi', 'Iklan', 'Event', 'Sponsorship',
+            'Gaji', 'Tunjangan', 'Bonus', 'Insentif', 'Komisi',
+            'Kesehatan', 'Keselamatan', 'Keamanan', 'Kebersihan', 'Lingkungan',
+            'Research', 'Development', 'Innovation', 'Quality', 'Testing',
+            'Logistics', 'Warehouse', 'Distribution', 'Shipping', 'Handling',
+            'Administrasi', 'Dokumentasi', 'Laporan', 'Audit', 'Compliance'
         ];
-        foreach ($history as $key => $value) {
-            UpdateExpenditureHistory::create($value);
+
+        for ($i = 0; $i < 50; $i++) {
+            $expenditure = Expenditure::create([
+                'type_of_fee' => $feeTypes[$i] ?? 'Fee Type ' . ($i + 1)
+            ]);
+
+            UpdateExpenditureHistory::create([
+                'expenditure_id' => $expenditure->id,
+                'user_id' => $user->id
+            ]);
         }
     }
 }

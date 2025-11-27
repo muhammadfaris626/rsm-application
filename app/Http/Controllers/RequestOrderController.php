@@ -230,15 +230,19 @@ class RequestOrderController extends Controller {
             'status' => $request->approval
         ]);
         $check = RequestOrder::where('id', $id)->first();
-        $check->update([
-            'status' => $request->approval
-        ]);
+        if ($check) {
+            $check->update([
+                'status' => $request->approval
+            ]);
+        }
         if ($request->approval == 'Selesai') {
             for ($i=0; $i < count($request->listData); $i++) {
                 $check = CenterStock::where('id', $request->listData[$i]['center_stock_id'])->first();
-                $check->update([
-                    'stock' => $check->stock - $request->listData[$i]['approved_quantity']
-                ]);
+                if ($check) {
+                    $check->update([
+                        'stock' => $check->stock - $request->listData[$i]['approved_quantity']
+                    ]);
+                }
                 BranchProduct::create([
                     'branch_id' => $request->branch_id[0]['id'],
                     'product_id' => $request->listData[$i]['center_stock']['product_id'],
@@ -251,10 +255,12 @@ class RequestOrderController extends Controller {
         } elseif($request->approval == 'Disetujui') {
             for ($i=0; $i < count($request->listData); $i++) {
                 $check = ListRequestOrder::where('id', $request->listData[$i]['id'])->first();
-                $check->update([
-                    'approved_quantity' => $request->listData[$i]['approved_quantity'],
-                    'status' => 1
-                ]);
+                if ($check) {
+                    $check->update([
+                        'approved_quantity' => $request->listData[$i]['approved_quantity'],
+                        'status' => 1
+                    ]);
+                }
             }
             Session::flash('toast', ['message' => 'Permintaan pesanan berhasil disetujui.']);
         } else {

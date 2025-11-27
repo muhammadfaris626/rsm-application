@@ -180,135 +180,133 @@
     });
 </script>
 <template>
-    <Head title="Laporan" />
+    <Head title="Laporan Cabang" />
     <AuthenticatedLayout>
-        <div class="grid grid-cols-1 h-full gap-4">
-            <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                        <li class="inline-flex items-center">
-                            <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                                </svg>
-                                Manajemen
-                            </a>
-                        </li>
-                        <li aria-current="page">
-                            <div class="flex items-center">
-                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Laporan</span>
+        <div class="grid grid-cols-1 h-full space-y-6">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-rose-600 to-rose-700 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold">Laporan Cabang</h1>
+                        <p class="text-rose-100 mt-1">Analisis dan ringkasan data operasional cabang</p>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-white">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter and Action Bar -->
+            <div class="bg-white rounded-xl shadow-md p-4">
+                <div class="flex flex-col lg:flex-row justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Cetak:</span>
+                            <div class="w-56">
+                                <VueMultiselect
+                                    v-model="selectCetak"
+                                    :options="pilihanCetak"
+                                    :close-on-select="true"
+                                    placeholder="Pilih cetak"
+                                    label="pilihan"
+                                    track-by="id"
+                                />
                             </div>
-                        </li>
-                    </ol>
-                </nav>
-            </div>
-            <div class="flex justify-between">
-                <div>
-                    <div class="flex justify-start">
-                        <div class="flex items-center justify-start mr-2">
-                            Cetak :
                         </div>
-                        <div class="w-56">
-                            <VueMultiselect
-                                v-model="selectCetak"
-                                :options="pilihanCetak"
-                                :close-on-select="true"
-                                placeholder="Pilih cetak"
-                                label="pilihan"
-                                track-by="id"
-                            />
-                        </div>
-                        <div class="flex items-center justify-start mr-2 ml-2">
-                            Export :
-                        </div>
-                        <div class="w-56">
-                            <VueMultiselect
-                                v-model="selectExport"
-                                :options="pilihanCetak"
-                                :close-on-select="true"
-                                placeholder="Pilih export"
-                                label="pilihan"
-                                track-by="id"
-                            />
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Export:</span>
+                            <div class="w-56">
+                                <VueMultiselect
+                                    v-model="selectExport"
+                                    :options="pilihanCetak"
+                                    :close-on-select="true"
+                                    placeholder="Pilih export"
+                                    label="pilihan"
+                                    track-by="id"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <div class="flex justify-end">
-                        <div class="flex items-center justify-start mx-2">
-                            Dari :
+                    <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Dari:</span>
+                            <div class="w-40">
+                                <TextInput
+                                    id="startDate"
+                                    type="date"
+                                    class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 block w-full p-2.5 transition-all duration-200"
+                                    v-model="selectStartDate"
+                                />
+                            </div>
                         </div>
-                        <div class="w-30">
-                            <TextInput
-                                id="name"
-                                type="date"
-                                class="block w-full bg-white"
-                                v-model="selectStartDate"
-                            />
-                        </div>
-                        <div class="flex items-center justify-start mx-2">
-                            Sampai :
-                        </div>
-                        <div class="w-30">
-                            <TextInput
-                                id="name"
-                                type="date"
-                                class="block w-full bg-white"
-                                v-model="selectEndDate"
-                            />
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Sampai:</span>
+                            <div class="w-40">
+                                <TextInput
+                                    id="endDate"
+                                    type="date"
+                                    class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 block w-full p-2.5 transition-all duration-200"
+                                    v-model="selectEndDate"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-4 gap-4">
-                <div class="bg-white rounded-xl shadow-lg">
-                    <p class="font-thin uppercase text-center py-1 bg-green-500 rounded-t-xl text-white">
-                        <strong>Omzet</strong>
-                    </p>
-                    <p class="uppercase text-center text-3xl p-4 text-green-500 font-bold">
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2">
+                        <p class="text-center text-white font-semibold text-sm uppercase">Omzet</p>
+                    </div>
+                    <p class="text-center text-2xl p-4 text-green-600 font-bold">
                         {{ formatRupiah((sales || []).reduce((sum, item) => sum + Number(item.total_price), 0)) }}
                     </p>
                 </div>
-                <div class="bg-white rounded-xl shadow-lg">
-                    <p class="font-thin uppercase text-center py-1 bg-red-500 rounded-t-xl text-white">
-                        <strong>Pengeluaran</strong>
-                    </p>
-                    <p class="uppercase text-center text-3xl p-4 text-red-500 font-bold">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                    <div class="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2">
+                        <p class="text-center text-white font-semibold text-sm uppercase">Pengeluaran</p>
+                    </div>
+                    <p class="text-center text-2xl p-4 text-red-600 font-bold">
                         {{ formatRupiah(expenditures.reduce((sum, item) => sum + Number(item.total_cost), 0)) }}
                     </p>
                 </div>
-                <div class="bg-white rounded-xl shadow-lg">
-                    <p class="font-thin uppercase text-center py-1 bg-yellow-500 rounded-t-xl text-white">
-                        <strong>Permintaan Stok</strong>
-                    </p>
-                    <p class="uppercase text-center text-3xl p-4 text-yellow-500 font-bold">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 px-4 py-2">
+                        <p class="text-center text-white font-semibold text-sm uppercase">Permintaan Stok</p>
+                    </div>
+                    <p class="text-center text-2xl p-4 text-yellow-600 font-bold">
                         {{ orders.length }}
                     </p>
                 </div>
-                <div class="bg-white rounded-xl shadow-lg">
-                    <p class="font-thin uppercase text-center py-1 bg-purple-500 rounded-t-xl text-white">
-                        <strong>Permintaan Return</strong>
-                    </p>
-                    <p class="uppercase text-center text-3xl p-4 text-purple-500 font-bold">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2">
+                        <p class="text-center text-white font-semibold text-sm uppercase">Permintaan Return</p>
+                    </div>
+                    <p class="text-center text-2xl p-4 text-purple-600 font-bold">
                         {{ returns.length }}
                     </p>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 h-full">
-                <div class="grid grid-cols-1 border-2 rounded-xl bg-white">
-                    <div class="grid grid-cols-2 gap-4 px-4 pt-2 text-center">
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white rounded-xl shadow-md border-2 border-gray-100 overflow-hidden">
+                    <div class="grid grid-cols-2 gap-4 px-4 pt-4 text-center bg-gradient-to-r from-green-50 to-red-50">
                         <div>
-                            <p class="text-green-500">Omzet</p>
-                            <p class="text-xl font-semibold text-green-500">
+                            <p class="text-green-600 font-medium">Omzet</p>
+                            <p class="text-xl font-bold text-green-600">
                                 {{ formatRupiah(sales.reduce((sum, item) => sum + Number(item.total_price), 0) ?? 0) }}
                             </p>
                         </div>
                         <div>
-                            <p class="text-red-500">Pengeluaran</p>
-                            <p class="text-xl font-semibold text-red-500">
+                            <p class="text-red-600 font-medium">Pengeluaran</p>
+                            <p class="text-xl font-bold text-red-600">
                                 {{ formatRupiah(expenditures.reduce((sum, item) => sum + Number(item.total_cost), 0)) }}
                             </p>
                         </div>
@@ -317,11 +315,13 @@
                         <VueApexCharts type="area" :options="chart1" :series="series1"></VueApexCharts>
                     </div>
                 </div>
-                <div class="border-2 rounded-xl bg-white">
-                    <p class="font-thin uppercase text-center bg-blue-500 rounded-t-xl text-white flex items-center justify-center py-3">
-                        <strong>Penjualan {{ new Date().getFullYear() }}</strong>
-                    </p>
-                    <div class="h-full">
+                <div class="bg-white rounded-xl shadow-md border-2 border-gray-100 overflow-hidden" style="height: 400px; display: flex; flex-direction: column;">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+                        <p class="text-center text-white font-semibold uppercase">
+                            Penjualan {{ new Date().getFullYear() }}
+                        </p>
+                    </div>
+                    <div style="flex-grow: 1;">
                         <VueApexCharts type="bar" height="95%" :options="chartOptions" :series="chartOptions.series" />
                     </div>
                 </div>

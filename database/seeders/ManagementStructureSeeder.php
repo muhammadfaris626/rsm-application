@@ -2,63 +2,41 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
+use App\Models\Employee;
 use App\Models\ManagementStructure;
+use App\Models\Position;
 use App\Models\UpdateManagementStructureHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class ManagementStructureSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $data = [
-            [
-                'employee_id' => 1,
-                'position_id' => 1,
-                'branch_id' => 1,
-            ],
-            [
-                'employee_id' => 2,
-                'position_id' => 2,
-                'branch_id' => 2,
-            ],
-            [
-                'employee_id' => 3,
-                'position_id' => 2,
-                'branch_id' => 3,
-            ],
-            [
-                'employee_id' => 4,
-                'position_id' => 3,
-                'branch_id' => 3,
-            ]
-        ];
-        foreach ($data as $key => $value) {
-            ManagementStructure::create($value);
+        $faker = Faker::create('id_ID');
+        $employees = Employee::pluck('id')->toArray();
+        $positions = Position::pluck('id')->toArray();
+        $branches = Branch::pluck('id')->toArray();
+        $users = User::pluck('id')->toArray();
+
+        if (empty($employees) || empty($positions) || empty($branches) || empty($users)) {
+            $this->command->warn('ManagementStructureSeeder: Required data not found. Skipping...');
+            return;
         }
-        $history = [
-            [
-                'management_structure_id' => 1,
-                'user_id' => 1
-            ],
-            [
-                'management_structure_id' => 2,
-                'user_id' => 1
-            ],
-            [
-                'management_structure_id' => 3,
-                'user_id' => 1
-            ],
-            [
-                'management_structure_id' => 4,
-                'user_id' => 1
-            ]
-        ];
-        foreach ($history as $key => $value) {
-            UpdateManagementStructureHistory::create($value);
+
+        for ($i = 0; $i < 50; $i++) {
+            $structure = ManagementStructure::create([
+                'employee_id' => $faker->randomElement($employees),
+                'position_id' => $faker->randomElement($positions),
+                'branch_id' => $faker->randomElement($branches)
+            ]);
+
+            UpdateManagementStructureHistory::create([
+                'management_structure_id' => $structure->id,
+                'user_id' => $faker->randomElement($users)
+            ]);
         }
     }
 }

@@ -2,51 +2,42 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
+use App\Models\Expenditure;
 use App\Models\OperationalBranch;
 use App\Models\UpdateOperationalBranchHistory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class OperationalBranchSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $data = [
-            [
-                'branch_id' => 1,
-                'date' => '2025-01-10',
-                'expenditure_id' => 1,
-                'total_cost' => '100000',
-                'description' => 'Keterangan 1',
-                'user_id' => 1,
-            ],
-            [
-                'branch_id' => 2,
-                'date' => '2025-01-11',
-                'expenditure_id' => 2,
-                'total_cost' => '15000',
-                'description' => 'Keterangan 2',
-                'user_id' => 1,
-            ],
-        ];
-        foreach ($data as $key => $value) {
-            OperationalBranch::create($value);
+        $faker = Faker::create('id_ID');
+        $expenditures = Expenditure::pluck('id')->toArray();
+        $branches = Branch::pluck('id')->toArray();
+        $users = User::pluck('id')->toArray();
+
+        if (empty($expenditures) || empty($branches) || empty($users)) {
+            $this->command->warn('OperationalBranchSeeder: Required data not found. Skipping...');
+            return;
         }
-        $history = [
-            [
-                'op_branch_id' => 1,
-                'user_id' => 1
-            ],
-            [
-                'op_branch_id' => 2,
-                'user_id' => 1
-            ]
-        ];
-        foreach ($history as $key => $value) {
-            UpdateOperationalBranchHistory::create($value);
+
+        for ($i = 0; $i < 50; $i++) {
+            $operational = OperationalBranch::create([
+                'expenditure_id' => $faker->randomElement($expenditures),
+                'branch_id' => $faker->randomElement($branches),
+                'date' => $faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d'),
+                'total_cost' => $faker->numberBetween(100000, 10000000),
+                'description' => $faker->sentence(),
+                'user_id' => $faker->randomElement($users)
+            ]);
+
+            UpdateOperationalBranchHistory::create([
+                'op_branch_id' => $operational->id,
+                'user_id' => $faker->randomElement($users)
+            ]);
         }
     }
 }

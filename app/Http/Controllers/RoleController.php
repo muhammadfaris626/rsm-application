@@ -194,7 +194,7 @@ class RoleController extends Controller {
         $data = Role::find($id);
         Gate::authorize('delete', $data);
         Role::where('id', $id)->delete();
-        Session::flash('toast', 'Data berhasil dihapus.');
+        Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();
     }
 

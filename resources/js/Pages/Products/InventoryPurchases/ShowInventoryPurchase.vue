@@ -82,107 +82,77 @@
 </script>
 
 <template>
-    <Head title="Tambah Pembeliaan Persediaan" />
+    <Head title="Detail Pembelian Persediaan" />
     <AuthenticatedLayout>
-        <div class="grid grid-cols-1 h-full">
-            <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-                        <li class="inline-flex items-center">
-                            <a href="#" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                                </svg>
-                                Produk
-                            </a>
-                        </li>
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <Link :href="route('inventoryPurchases.index')" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white">Data Pembelian Persediaan</Link>
-                            </div>
-                        </li>
-                        <li aria-current="page">
-                            <div class="flex items-center">
-                                <svg class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                                </svg>
-                                <span class="ms-1 text-sm font-medium text-gray-500 md:ms-2 dark:text-gray-400">Daftar Pembeliaan Persediaan</span>
-                            </div>
-                        </li>
-                    </ol>
-                </nav>
+        <div class="space-y-6">
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Detail Pembelian Persediaan</h1>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">Lihat detail dan cetak barcode</p>
+                </div>
+                <div>
+                    <Link :href="route('inventoryPurchases.index')" class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Kembali
+                    </Link>
+                </div>
             </div>
-            <div class="pt-4 grid grid-cols-1 gap-4">
-                <div class="bg-white rounded-xl py-2">
-                    <div class="relative overflow-x-auto">
-                        <table class="text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                            <tbody>
-                                <tr class="bg-white dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                    <th scope="row" class="px-4 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        Nomor Faktur
-                                    </th>
-                                    <td>
-                                        :
-                                    </td>
-                                    <td class="px-4 font-bold">
-                                        {{ inventoryPurchase.invoice_number }}
-                                    </td>
-                                </tr>
-                                <tr class="bg-white dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                    <th scope="row" class="px-4 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        Tanggal
-                                    </th>
-                                    <td>
-                                        :
-                                    </td>
-                                    <td class="px-4">
-                                        {{ new Date(inventoryPurchase.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) }}
-                                    </td>
-                                </tr>
-                                <tr class="bg-white dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                    <th scope="row" class="px-4 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        Supplier
-                                    </th>
-                                    <td>
-                                        :
-                                    </td>
-                                    <td class="px-4">
-                                        {{ inventoryPurchase.supplier_id[0].name }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+            <!-- Informasi Pembelian -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Nomor Faktur</label>
+                        <p class="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">{{ inventoryPurchase.invoice_number }}</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Tanggal</label>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ new Date(inventoryPurchase.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) }}</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Supplier</label>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ inventoryPurchase.supplier_id?.[0]?.name || 'N/A' }}</p>
                     </div>
                 </div>
-                <div class="bg-white rounded-xl py-4 px-4">
-                    <div class="flex justify-between mb-4">
-                        <div>
-                            <div class="flex justify-start">
-                                <div class="flex items-center justify-start mr-2">
-                                    Jumlah cetak per barcode :
-                                </div>
-                                <div class="w-14">
-                                    <TextInput
-                                        id="text"
-                                        type="text"
-                                        class="block w-full text-center"
-                                        v-model="form.jumlahCetak"
-                                    />
-                                </div>
-                                <div class="flex items-center justify-start mr-2 ml-2">
-                                    <button @click="handlePrint" type="button" class="px-5 py-2 text-sm font-medium text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-center">
-                                        PRINT
-                                    </button>
-                                </div>
+            </div>
+
+            <!-- Print Barcode Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-100 dark:bg-blue-900 rounded-lg p-2">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Cetak Barcode</h2>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Jumlah cetak per barcode:</label>
+                            <div class="w-20">
+                                <TextInput
+                                    id="jumlahCetak"
+                                    type="text"
+                                    class="block w-full text-center"
+                                    v-model="form.jumlahCetak"
+                                />
                             </div>
                         </div>
+                        <button @click="handlePrint" type="button" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Print
+                        </button>
                     </div>
-                    <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-                        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-blue-500 dark:bg-gray-700 dark:text-gray-400">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-white uppercase bg-gradient-to-r from-blue-600 to-blue-700">
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
@@ -217,7 +187,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(data, index) in mergedList" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <tr v-for="(data, index) in mergedList" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
                                             <input v-model="form.selectedCheckbox" :value="data.serial_barcode" id="checkbox-table-search-1" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
@@ -249,9 +219,8 @@
                                         <QrcodeVue :value="data.serial_barcode" :size="50" level="H" render-as="svg" />
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

@@ -170,7 +170,7 @@ class InventoryPurchaseController extends Controller
             ListInventoryPurchase::updateOrCreate(
                 [
                     'inventory_purchase_id' => $inventoryPurchase->id,
-                    'product_id' => $product['product_id']['id']
+                    'product_id' => $productId
                 ],
                 [
                     'price' => $product['price'],

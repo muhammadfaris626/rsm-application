@@ -14,6 +14,7 @@ use App\Models\Employee;
 use App\Models\Location;
 use App\Models\OperationalBranch;
 use App\Models\Position;
+use App\Models\RequestOrder;
 use App\Models\Sale;
 use App\Models\TestRecord;
 use App\Models\User;
@@ -27,6 +28,7 @@ use Inertia\Response;
 class DashboardController extends Controller {
     public function index(Request $request): Response {
         $userRole = Auth::user()->roles[0]['name'];
+        $employee = null;
         if ($userRole == 'admin-branch') {
             $employee = Employee::where('employee_number', Auth::user()->username)->first();
             $sales = Sale::query()
@@ -181,6 +183,50 @@ class DashboardController extends Controller {
         }
 
 
+        // Get recent sales
+        $recentSalesQuery = Sale::query()
+            ->when($userRole == 'admin-branch', function($query) use($employee) {
+                if (isset($employee) && $employee) {
+                    $query->where('branch_id', $employee->branch_id);
+                }
+            })
+            ->when($request->branch, function($query) use($request) {
+                $query->where('branch_id', $request->branch);
+            })
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'id' => $sale->id,
+                    'invoice_number' => $sale->invoice_number,
+                    'date' => Carbon::parse($sale->date)->format('d M Y'),
+                    'total_price' => $sale->listSale->sum('total_price'),
+                ];
+            });
+
+        // Get recent request orders
+        $recentOrdersQuery = RequestOrder::query()
+            ->when($userRole == 'admin-branch', function($query) use($employee) {
+                if (isset($employee) && $employee) {
+                    $query->where('branch_id', $employee->branch_id);
+                }
+            })
+            ->when($request->branch, function($query) use($request) {
+                $query->where('branch_id', $request->branch);
+            })
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'ro_number' => $order->ro_number,
+                    'date' => Carbon::parse($order->date)->format('d M Y'),
+                    'status' => $order->status,
+                ];
+            });
+
         return Inertia::render('Dashboards/IndexDashboardFull', [
             'branches' => BranchResource::collection(Branch::where('status', 'Aktif')->get()),
             'sales' => $sales,
@@ -188,7 +234,9 @@ class DashboardController extends Controller {
             'employeeActive' => $employeeActive,
             'branchActive' => $branchActive->count(),
             'profile' => $profileBranch,
-            'userRoleVisitor' => $userRole
+            'userRoleVisitor' => $userRole,
+            'recentSales' => $recentSalesQuery,
+            'recentOrders' => $recentOrdersQuery,
         ]);
     }
 }

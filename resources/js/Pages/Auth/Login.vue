@@ -48,7 +48,7 @@ const togglePasswordVisibility = () => {
                 <div class="mb-4 transform transition-transform duration-300 hover:scale-105">
                     <img :src="'images/rsm-merah.png'" class="h-24 mx-auto drop-shadow-lg">
                 </div>
-                <h1 class="text-2xl font-bold text-white mb-2">Selamat Datang11</h1>
+                <h1 class="text-2xl font-bold text-white mb-2">Selamat Datang</h1>
                 <p class="text-red-100 text-sm">Silakan masuk ke akun Anda</p>
             </div>
 

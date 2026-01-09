@@ -21,7 +21,6 @@ class ProductResource extends JsonResource
                 return [new ProductCategoryResource($this->productCategory)];
             }, []),
             'product_name' => $this->product_name,
-            'serial_barcode' => $this->serial_barcode,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'last_update' => $this->whenLoaded('updateProductHistory', function() {

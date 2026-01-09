@@ -35,7 +35,7 @@ class ProductController extends Controller
         
         // Optimized query with eager loading
         $searchQuery = Product::query()
-            ->select('id', 'product_category_id', 'product_name', 'serial_barcode', 'created_at', 'updated_at')
+            ->select('id', 'product_category_id', 'product_name', 'created_at', 'updated_at')
             ->with('productCategory:id,product_category_name')
             ->latest();
         
@@ -63,8 +63,7 @@ class ProductController extends Controller
         Gate::authorize('create', Product::class);
         $product = Product::create([
             'product_category_id' => $request->product_category_id['id'],
-            'product_name' => $request->product_name,
-            'serial_barcode' => $request->serial_barcode
+            'product_name' => $request->product_name
         ]);
         UpdateProductHistory::create([
             'product_id' => $product->id,
@@ -88,8 +87,7 @@ class ProductController extends Controller
         Gate::authorize('update', $product);
         $product->update([
             'product_category_id' => $request->product_category_id['id'],
-            'product_name' => $request->product_name,
-            'serial_barcode' => $request->serial_barcode
+            'product_name' => $request->product_name
         ]);
         UpdateProductHistory::create([
             'product_id' => $product->id,

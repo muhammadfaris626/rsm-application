@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\UpdateSupplierHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -23,7 +22,9 @@ class SupplierResource extends JsonResource
             'address' => $this->address,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateSupplierHistory::with('user')->where('supplier_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateSupplierHistory', function() {
+                return $this->updateSupplierHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

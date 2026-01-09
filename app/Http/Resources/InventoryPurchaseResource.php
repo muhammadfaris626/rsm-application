@@ -2,11 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\CenterStock;
-use App\Models\ListInventoryPurchase;
-use App\Models\Product;
-use App\Models\Supplier;
-use App\Models\UpdateInventoryPurchaseHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,12 +19,20 @@ class InventoryPurchaseResource extends JsonResource
             'id' => $this->id,
             'invoice_number' => $this->invoice_number,
             'date' => $this->date,
-            'supplier_id' => SupplierResource::collection(Supplier::where('id', $this->supplier_id)->get()),
-            'listData' => ListInventoryPurchase::with('product')->where('inventory_purchase_id', $this->id)->get(),
+            'supplier_id' => $this->whenLoaded('supplier', function() {
+                return [new SupplierResource($this->supplier)];
+            }, []),
+            'listData' => $this->whenLoaded('listInventoryPurchase', function() {
+                return $this->listInventoryPurchase;
+            }, []),
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateInventoryPurchaseHistory::with('user')->where('inventory_purchase_id', $this->id)->latest()->first(),
-            'stock' => CenterStock::where('inventory_purchase_id', $this->id)->get(),
+            'last_update' => $this->whenLoaded('updateInventoryPurchaseHistory', function() {
+                return $this->updateInventoryPurchaseHistory->sortByDesc('id')->first();
+            }),
+            'stock' => $this->whenLoaded('centerStock', function() {
+                return $this->centerStock;
+            }, []),
         ];
     }
 }

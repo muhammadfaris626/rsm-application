@@ -7,29 +7,57 @@ use App\Models\Employee;
 use App\Models\RequestOrder;
 use App\Models\RequestOrderLog;
 use App\Models\User;
+use App\Traits\OptimizedQueries;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ApiPermintaanStokController extends Controller
 {
+    use OptimizedQueries;
+
     public function index($user_id) {
-        $checkUser = User::where('id', $user_id)->first();
-        $employee = Employee::where('employee_number', $checkUser->username)->first();
+        // Cache user lookup
+        $checkUser = Cache::remember("user_{$user_id}", 300, function() use ($user_id) {
+            return User::select('id', 'username')->where('id', $user_id)->first();
+        });
+        
+        if (!$checkUser) {
+            return response()->json(['data' => [], 'total' => 0]);
+        }
+        
+        // Cache employee lookup
+        $employee = $this->getCachedEmployee($checkUser->username, true);
+        
+        if (!$employee) {
+            return response()->json(['data' => [], 'total' => 0]);
+        }
+        
         setlocale(LC_TIME, 'id_ID.utf8');
-        $permintaanStok = RequestOrder::where('branch_id', $employee->branch_id)
+        
+        // Optimized query with eager loading
+        $permintaanStok = RequestOrder::query()
+            ->select('id', 'ro_number', 'date', 'branch_id', 'status')
+            ->with([
+                'branch:id,branch_name',
+                'listRequestOrder:id,request_order_id,center_stock_id,approved_quantity,serial_barcode',
+                'listRequestOrder.centerStock:id,product_id',
+                'listRequestOrder.centerStock.product:id,product_name'
+            ])
+            ->where('branch_id', $employee->branch_id)
             ->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'nomor_permintaan' => $item->ro_number,
                     'tanggal' => Carbon::parse($item->date)->translatedFormat('d F Y'),
-                    'cabang' => $item->branch->branch_name,
+                    'cabang' => $item->branch->branch_name ?? 'N/A',
                     'status' => $item->status,
                     'list' => $item->listRequestOrder->map(function($listItem) {
                         return [
                             'id' => $listItem->id,
-                            'barang' => $listItem->centerStock->product->product_name,
+                            'barang' => $listItem->centerStock?->product?->product_name ?? 'N/A',
                             'jumlah' => $listItem->approved_quantity,
                             'barcode' => $listItem->serial_barcode,
                             'status' => false
@@ -37,6 +65,7 @@ class ApiPermintaanStokController extends Controller
                     })
                 ];
             });
+        
         return response()->json([
             'data' => $permintaanStok,
             'total' => count($permintaanStok),
@@ -62,10 +91,9 @@ class ApiPermintaanStokController extends Controller
             'user_id' => $user_id,
             'status' => $status
         ]);
-        $check = RequestOrder::where('id', $order_id)->first();
-        $check->update([
-            'status' => $status
-        ]);
+        
+        // Use single update query
+        RequestOrder::where('id', $order_id)->update(['status' => $status]);
 
         return response()->json([
             'success' => true,

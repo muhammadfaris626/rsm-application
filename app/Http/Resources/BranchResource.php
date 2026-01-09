@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\UpdateBranchHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,7 +24,9 @@ class BranchResource extends JsonResource
             'status' => $this->status,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateBranchHistory::with('user')->where('branch_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateBranchHistory', function() {
+                return $this->updateBranchHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

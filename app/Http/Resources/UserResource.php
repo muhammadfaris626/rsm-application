@@ -2,11 +2,8 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class UserResource extends JsonResource
 {
@@ -22,10 +19,11 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'username' => $this->username,
             'email' => $this->email,
-            'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'roles' => RoleResource::collection($this->roles)
-            // 'roles' => $this->roles[0]['name']
+            'created_at' => $this->created_at?->isoFormat('D MMMM YYYY HH:mm:ss'),
+            'updated_at' => $this->updated_at?->isoFormat('D MMMM YYYY HH:mm:ss'),
+            'roles' => $this->whenLoaded('roles', function() {
+                return RoleResource::collection($this->roles);
+            }, [])
         ];
     }
 }

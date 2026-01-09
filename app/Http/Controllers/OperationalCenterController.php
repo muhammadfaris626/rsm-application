@@ -8,16 +8,20 @@ use App\Http\Resources\OperationalCenterResource;
 use App\Models\Expenditure;
 use App\Models\OperationalCenter;
 use App\Models\UpdateOperationalCenterHistory;
+use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class OperationalCenterController extends Controller
 {
+    use OptimizedQueries;
+
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('total_cost', 'LIKE', '%' . $search . '%')
@@ -33,13 +37,26 @@ class OperationalCenterController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', OperationalCenter::class);
-        $searchQuery = OperationalCenter::query()->latest();
+        
+        // Optimized query with eager loading
+        $searchQuery = OperationalCenter::query()
+            ->select('id', 'date', 'expenditure_id', 'total_cost', 'description', 'user_id', 'created_at', 'updated_at')
+            ->with([
+                'expenditure:id,type_of_fee',
+                'user:id,name'
+            ])
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = OperationalCenterResource::collection($searchQuery->paginate(12));
+        
+        // Use cached expenditures
+        $expenditures = $this->getCachedExpenditures();
+        
         return Inertia::render('Operationals/Centers/IndexOperationalCenter', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'expenditures' => ExpenditureResource::collection(Expenditure::all())
+            'expenditures' => ExpenditureResource::collection($expenditures)
         ]);
     }
 

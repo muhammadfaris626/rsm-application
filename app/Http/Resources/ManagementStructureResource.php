@@ -2,10 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Branch;
-use App\Models\Employee;
-use App\Models\Position;
-use App\Models\UpdateManagementStructureHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,12 +17,20 @@ class ManagementStructureResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'employee_id' => EmployeeResource::collection(Employee::where('id', $this->employee_id)->get()),
-            'position_id' => PositionResource::collection(Position::where('id', $this->position_id)->get()),
-            'branch_id' => BranchResource::collection(Branch::where('id', $this->branch_id)->get()),
+            'employee_id' => $this->whenLoaded('employee', function() {
+                return [new EmployeeResource($this->employee)];
+            }, []),
+            'position_id' => $this->whenLoaded('position', function() {
+                return [new PositionResource($this->position)];
+            }, []),
+            'branch_id' => $this->whenLoaded('branch', function() {
+                return [new BranchResource($this->branch)];
+            }, []),
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateManagementStructureHistory::with('user')->where('management_structure_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateManagementStructureHistory', function() {
+                return $this->updateManagementStructureHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

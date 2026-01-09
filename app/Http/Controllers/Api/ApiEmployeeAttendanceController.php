@@ -17,18 +17,34 @@ class ApiEmployeeAttendanceController extends Controller {
     }
 
     public function index(Request $request) {
-        $query = Employee::with('attendances');
+        // Optimized with select and eager loading
+        $query = Employee::query()
+            ->select('id', 'employee_number', 'name', 'branch_id', 'status')
+            ->with([
+                'attendances:id,employee_id,work_date,check_in,check_out',
+                'branch:id,branch_name'
+            ]);
+        
         $this->applySearch($query, $request->search);
         $perPage = $request->get('per_page', 12);
         $data = $query->paginate($perPage);
+        
         return response()->json([
             'data' => EmployeeResource::collection($data)->response()->getData(true)
         ]);
     }
 
     public function show(Request $request, $id) {
-        $query = Employee::with('attendances')->where('id', $id)->first();
+        // Optimized with select and eager loading
+        $query = Employee::query()
+            ->select('id', 'employee_number', 'name', 'branch_id', 'status')
+            ->with([
+                'attendances:id,employee_id,work_date,check_in,check_out,check_in_photo,check_out_photo',
+                'branch:id,branch_name'
+            ])
+            ->where('id', $id)
+            ->first();
+        
         return response()->json($query);
     }
-
 }

@@ -2,10 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Branch;
-use App\Models\Expenditure;
-use App\Models\UpdateOperationalBranchHistory;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,15 +17,23 @@ class OperationalBranchResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'branch_id' => BranchResource::collection(Branch::where('id', $this->branch_id)->get()),
+            'branch_id' => $this->whenLoaded('branch', function() {
+                return [new BranchResource($this->branch)];
+            }, []),
             'date' => $this->date,
-            'expenditure_id' => ExpenditureResource::collection(Expenditure::where('id', $this->expenditure_id)->get()),
+            'expenditure_id' => $this->whenLoaded('expenditure', function() {
+                return [new ExpenditureResource($this->expenditure)];
+            }, []),
             'total_cost' => $this->total_cost,
             'description' => $this->description,
-            'user_id' => User::where('id', $this->user_id)->first(),
+            'user_id' => $this->whenLoaded('user', function() {
+                return $this->user;
+            }),
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateOperationalBranchHistory::with('user')->where('op_branch_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateOperationalBranchHistory', function() {
+                return $this->updateOperationalBranchHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,14 +39,40 @@ class RequestOrderController extends Controller {
     public function index(Request $request): Response {
         Gate::authorize('viewAny', RequestOrder::class);
         $user = Auth::user();
-        $employee = Employee::where('employee_number', $user->username)->first();
-        $searchQuery = RequestOrder::query()->when($user->roles[0]['name'] !== 'root', fn($query) => $query->where('branch_id', $employee->branch_id))->latest();
+        
+        // Cache employee data
+        $employee = null;
+        if ($user->roles[0]['name'] !== 'root') {
+            $employee = Cache::remember("employee_{$user->username}", 300, function() use ($user) {
+                return Employee::select('id', 'employee_number', 'branch_id')
+                    ->where('employee_number', $user->username)
+                    ->first();
+            });
+        }
+        
+        // Optimized query with eager loading
+        $searchQuery = RequestOrder::query()
+            ->select('id', 'ro_number', 'branch_id', 'date', 'status', 'created_at', 'updated_at')
+            ->with([
+                'branch:id,branch_name,branch_code',
+                'listRequestOrder:id,request_order_id,center_stock_id,quantity'
+            ])
+            ->when($user->roles[0]['name'] !== 'root' && $employee, 
+                fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
+        
+        // Cache approval types
+        $approvalTypes = Cache::remember('approval_types', 600, function() {
+            return ApprovalType::select('id', 'name', 'description')->get();
+        });
+        
         return Inertia::render('Products/RequestOrders/IndexRequestOrder', [
             'fetchData' => RequestOrderResource::collection($searchQuery->paginate(12)),
             'search' => $request->search ?? '',
-            'approvalTypes' => ApprovalTypeResource::collection(ApprovalType::all()),
-            'userBranch' => $employee->branch_id ?? 0
+            'approvalTypes' => ApprovalTypeResource::collection($approvalTypes),
+            'userBranch' => $employee?->branch_id ?? 0
         ]);
     }
 

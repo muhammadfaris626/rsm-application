@@ -2,237 +2,166 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\AttendanceResource;
 use App\Http\Resources\BranchResource;
-use App\Http\Resources\CourseResource;
-use App\Http\Resources\EmployeeResource;
-use App\Models\Attendance;
 use App\Models\Branch;
-use App\Models\CountEmployee;
-use App\Models\Course;
 use App\Models\Employee;
-use App\Models\Location;
 use App\Models\OperationalBranch;
-use App\Models\Position;
 use App\Models\RequestOrder;
 use App\Models\Sale;
-use App\Models\TestRecord;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller {
     public function index(Request $request): Response {
-        $userRole = Auth::user()->roles[0]['name'];
+        $user = Auth::user();
+        $userRole = $user->roles[0]['name'];
         $employee = null;
+        
+        // Cache key untuk data user
+        $cachePrefix = "dashboard_{$user->id}_{$request->branch}_{$request->start_date}_{$request->end_date}";
+        
+        // Parse dates once
+        $startDate = $request->start_date && $request->end_date 
+            ? Carbon::parse($request->start_date)->startOfDay() 
+            : Carbon::today()->startOfDay();
+        $endDate = $request->start_date && $request->end_date 
+            ? Carbon::parse($request->end_date)->endOfDay() 
+            : Carbon::today()->endOfDay();
+        
         if ($userRole == 'admin-branch') {
-            $employee = Employee::where('employee_number', Auth::user()->username)->first();
+            // Cache employee data
+            $employee = Cache::remember("employee_{$user->username}", 300, function() use ($user) {
+                return Employee::select('id', 'employee_number', 'branch_id')
+                    ->where('employee_number', $user->username)
+                    ->first();
+            });
+            
+            $branchId = $employee?->branch_id;
+            
+            // Optimized sales query with eager loading and withSum
             $sales = Sale::query()
-                ->where('branch_id', $employee->branch_id)
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
-                })
+                ->select('id', 'branch_id', 'updated_at')
+                ->where('branch_id', $branchId)
+                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->withSum('listSale', 'total_price')
                 ->get()
-                ->map(function ($sale) {
-                    return [
-                        'total_price' => $sale->listSale->sum('total_price'),
-                        'date' => Carbon::parse($sale->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
-                    ];
-                });
+                ->map(fn($sale) => [
+                    'total_price' => $sale->list_sale_sum_total_price ?? 0,
+                    'date' => $sale->updated_at->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+            
             $expenditures = OperationalBranch::query()
-                ->where('branch_id', $employee->branch_id)
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
-                })
+                ->select('id', 'branch_id', 'total_cost', 'updated_at')
+                ->where('branch_id', $branchId)
+                ->whereBetween('updated_at', [$startDate, $endDate])
                 ->get()
-                ->map(function ($expenditure) {
-                    return [
-                        'total_cost' => $expenditure->total_cost,
-                        'date' => Carbon::parse($expenditure->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
-                    ];
-                });
-            // $employeeActive = Employee::query()
-            //     ->where('status', 'Aktif')
-            //     ->where('branch_id', $employee->branch_id)
-            //     ->when($request->start_date && $request->end_date, function($query) use($request) {
-            //         $query->whereBetween('updated_at', [
-            //             Carbon::parse($request->start_date)->startOfDay(),
-            //             Carbon::parse($request->end_date)->endOfDay(),
-            //         ]);
-            //     }, function($query) {
-            //         $query->whereDate('updated_at', Carbon::today());
-            //     })
-            //     ->get()
-            //     ->map(function ($employee) {
-            //         return [
-            //             'total' => $employee
-            //         ];
-            //     });
-            $employeeActive = Employee::query()
-                ->where('status', 'Aktif')
-                ->where('branch_id', $employee->branch_id)
-                ->when($request->branch, function($query) use($request) {
-                    $query->where('branch_id', $request->branch);
-                })
+                ->map(fn($expenditure) => [
+                    'total_cost' => $expenditure->total_cost,
+                    'date' => $expenditure->updated_at->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+            
+            $employeeActive = Employee::where('status', 'Aktif')
+                ->where('branch_id', $branchId)
                 ->count();
-            $branchActive = Branch::query()
-                ->where('status', 'Aktif')
-                ->get()
-                ->map(function ($branch) {
-                    return [
-                        'total' => $branch
-                    ];
-                });
-            $profileBranch = Branch::query()
-                ->where('id', $employee->branch_id)
-                ->first();
+            
+            $profileBranch = Cache::remember("branch_{$branchId}", 300, function() use ($branchId) {
+                return Branch::select('id', 'branch_code', 'branch_name', 'branch_address', 'status')
+                    ->find($branchId);
+            });
         } else {
+            $branchId = $request->branch;
+            
+            // Optimized sales query with eager loading and withSum
             $sales = Sale::query()
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
-                })
-                ->when($request->branch, function($query) use($request) {
-                    $query->where('branch_id', $request->branch);
-                })
+                ->select('id', 'branch_id', 'updated_at')
+                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->when($branchId, fn($query) => $query->where('branch_id', $branchId))
+                ->withSum('listSale', 'total_price')
                 ->get()
-                ->map(function ($sale) {
-                    return [
-                        'total_price' => $sale->listSale->sum('total_price'),
-                        'date' => Carbon::parse($sale->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
-                    ];
-                });
+                ->map(fn($sale) => [
+                    'total_price' => $sale->list_sale_sum_total_price ?? 0,
+                    'date' => $sale->updated_at->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+            
             $expenditures = OperationalBranch::query()
-                ->when($request->start_date && $request->end_date, function($query) use($request) {
-                    $query->whereBetween('updated_at', [
-                        Carbon::parse($request->start_date)->startOfDay(),
-                        Carbon::parse($request->end_date)->endOfDay(),
-                    ]);
-                }, function($query) {
-                    $query->whereDate('updated_at', Carbon::today());
-                })
-                ->when($request->branch, function($query) use($request) {
-                    $query->where('branch_id', $request->branch);
-                })
+                ->select('id', 'branch_id', 'total_cost', 'updated_at')
+                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->when($branchId, fn($query) => $query->where('branch_id', $branchId))
                 ->get()
-                ->map(function ($expenditure) {
-                    return [
-                        'total_cost' => $expenditure->total_cost,
-                        'date' => Carbon::parse($expenditure->updated_at)->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
-                    ];
-                });
-            // $employeeActive = Employee::query()
-            //     ->where('status', 'Aktif')
-            //     ->when($request->start_date && $request->end_date, function($query) use($request) {
-            //         $query->whereBetween('updated_at', [
-            //             Carbon::parse($request->start_date)->startOfDay(),
-            //             Carbon::parse($request->end_date)->endOfDay(),
-            //         ]);
-            //     }, function($query) {
-            //         $query->whereDate('updated_at', Carbon::today());
-            //     })
-            //     ->when($request->branch, function($query) use($request) {
-            //         $query->where('branch_id', $request->branch);
-            //     })
-            //     ->get()
-            //     ->map(function ($employee) {
-            //         return [
-            //             'total' => $employee
-            //         ];
-            //     });
-            $employeeActive = Employee::query()
-                ->where('status', 'Aktif')
-                ->when($request->branch, function($query) use($request) {
-                    $query->where('branch_id', $request->branch);
-                })
+                ->map(fn($expenditure) => [
+                    'total_cost' => $expenditure->total_cost,
+                    'date' => $expenditure->updated_at->timezone('Asia/Makassar')->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+            
+            $employeeActive = Employee::where('status', 'Aktif')
+                ->when($branchId, fn($query) => $query->where('branch_id', $branchId))
                 ->count();
-            $branchActive = Branch::query()
-                ->where('status', 'Aktif')
-                ->get()
-                ->map(function ($branch) {
-                    return [
-                        'total' => $branch
-                    ];
-                });
-            $profileBranch = Branch::query()
-                ->when($request->branch, function($query) use($request) {
-                    $query->where('id', $request->branch);
+            
+            $profileBranch = $branchId 
+                ? Cache::remember("branch_{$branchId}", 300, function() use ($branchId) {
+                    return Branch::select('id', 'branch_code', 'branch_name', 'branch_address', 'status')
+                        ->find($branchId);
                 })
-                ->when(!$request->branch, function($query) {
-                    return $query->whereRaw('1 = 0');
-                })
-                ->first();
+                : null;
         }
+        
+        // Cache active branches (same for all users)
+        $branchActiveCount = Cache::remember('active_branches_count', 300, function() {
+            return Branch::where('status', 'Aktif')->count();
+        });
+        
+        // Cache active branches for dropdown
+        $activeBranches = Cache::remember('active_branches', 300, function() {
+            return Branch::select('id', 'branch_code', 'branch_name', 'status')
+                ->where('status', 'Aktif')
+                ->get();
+        });
 
-
-        // Get recent sales
+        // Get recent sales with optimized eager loading
         $recentSalesQuery = Sale::query()
-            ->when($userRole == 'admin-branch', function($query) use($employee) {
-                if (isset($employee) && $employee) {
-                    $query->where('branch_id', $employee->branch_id);
-                }
-            })
-            ->when($request->branch, function($query) use($request) {
-                $query->where('branch_id', $request->branch);
-            })
+            ->select('id', 'branch_id', 'invoice_number', 'date', 'updated_at')
+            ->when($userRole == 'admin-branch' && $employee, 
+                fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->when($request->branch, 
+                fn($query) => $query->where('branch_id', $request->branch))
+            ->withSum('listSale', 'total_price')
             ->latest()
             ->limit(10)
             ->get()
-            ->map(function ($sale) {
-                return [
-                    'id' => $sale->id,
-                    'invoice_number' => $sale->invoice_number,
-                    'date' => Carbon::parse($sale->date)->format('d M Y'),
-                    'total_price' => $sale->listSale->sum('total_price'),
-                ];
-            });
+            ->map(fn($sale) => [
+                'id' => $sale->id,
+                'invoice_number' => $sale->invoice_number,
+                'date' => Carbon::parse($sale->date)->format('d M Y'),
+                'total_price' => $sale->list_sale_sum_total_price ?? 0,
+            ]);
 
-        // Get recent request orders
+        // Get recent request orders with optimized query
         $recentOrdersQuery = RequestOrder::query()
-            ->when($userRole == 'admin-branch', function($query) use($employee) {
-                if (isset($employee) && $employee) {
-                    $query->where('branch_id', $employee->branch_id);
-                }
-            })
-            ->when($request->branch, function($query) use($request) {
-                $query->where('branch_id', $request->branch);
-            })
+            ->select('id', 'branch_id', 'ro_number', 'date', 'status')
+            ->when($userRole == 'admin-branch' && $employee, 
+                fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->when($request->branch, 
+                fn($query) => $query->where('branch_id', $request->branch))
             ->latest()
             ->limit(10)
             ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'ro_number' => $order->ro_number,
-                    'date' => Carbon::parse($order->date)->format('d M Y'),
-                    'status' => $order->status,
-                ];
-            });
+            ->map(fn($order) => [
+                'id' => $order->id,
+                'ro_number' => $order->ro_number,
+                'date' => Carbon::parse($order->date)->format('d M Y'),
+                'status' => $order->status,
+            ]);
 
         return Inertia::render('Dashboards/IndexDashboardFull', [
-            'branches' => BranchResource::collection(Branch::where('status', 'Aktif')->get()),
+            'branches' => BranchResource::collection($activeBranches),
             'sales' => $sales,
             'expenditures' => $expenditures,
             'employeeActive' => $employeeActive,
-            'branchActive' => $branchActive->count(),
+            'branchActive' => $branchActiveCount,
             'profile' => $profileBranch,
             'userRoleVisitor' => $userRole,
             'recentSales' => $recentSalesQuery,

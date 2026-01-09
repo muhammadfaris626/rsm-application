@@ -2,10 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Branch;
-use App\Models\ListSale;
-use App\Models\ManagementStructure;
-use App\Models\UpdateSaleHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,14 +17,23 @@ class SaleResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'branch_id' => BranchResource::collection(Branch::where('id', $this->branch_id)->get()),
+            'branch_id' => $this->whenLoaded('branch', function() {
+                return [new BranchResource($this->branch)];
+            }, []),
             'invoice_number' => $this->invoice_number,
             'date' => $this->date,
-            'management_structure_id' => ManagementStructureResource::collection(ManagementStructure::where('id', $this->management_structure_id)->get()),
-            'listData' => ListSale::with(['branchProduct', 'branchProduct.product'])->where('sale_id', $this->id)->get(),
+            'management_structure_id' => $this->whenLoaded('managementStructure', function() {
+                return [new ManagementStructureResource($this->managementStructure)];
+            }, []),
+            'listData' => $this->whenLoaded('listSale', function() {
+                return $this->listSale;
+            }, []),
+            'list_sale_sum_total_price' => $this->list_sale_sum_total_price ?? null,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateSaleHistory::with('user')->where('sale_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateSaleHistory', function() {
+                return $this->updateSaleHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

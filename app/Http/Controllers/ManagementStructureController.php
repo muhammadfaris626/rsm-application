@@ -12,16 +12,20 @@ use App\Models\Employee;
 use App\Models\ManagementStructure;
 use App\Models\Position;
 use App\Models\UpdateManagementStructureHistory;
+use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ManagementStructureController extends Controller
 {
+    use OptimizedQueries;
+
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->whereHas('employee', function($query) use($search) {
@@ -38,16 +42,31 @@ class ManagementStructureController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', ManagementStructure::class);
-        $searchQuery = ManagementStructure::query()->latest();
+        
+        // Optimized query with eager loading
+        $searchQuery = ManagementStructure::query()
+            ->select('id', 'employee_id', 'position_id', 'branch_id', 'created_at', 'updated_at')
+            ->with([
+                'employee:id,name,employee_number',
+                'position:id,position_name',
+                'branch:id,branch_name,branch_code'
+            ])
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = ManagementStructureResource::collection($searchQuery->paginate(12));
+
+        // Use cached data
+        $employees = $this->getCachedActiveEmployees();
+        $positions = $this->getCachedPositions();
+        $branches = $this->getCachedActiveBranches();
 
         return Inertia::render('Managements/ManagementStructures/IndexManagementStructure', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'employees' => EmployeeResource::collection(Employee::where('status', 'Aktif')->get()),
-            'positions' => PositionResource::collection(Position::all()),
-            'branches' => BranchResource::collection(Branch::where('status', 'Aktif')->get())
+            'employees' => EmployeeResource::collection($employees),
+            'positions' => PositionResource::collection($positions),
+            'branches' => BranchResource::collection($branches)
         ]);
     }
 

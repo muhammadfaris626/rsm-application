@@ -12,16 +12,20 @@ use App\Models\ListInventoryPurchase;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\UpdateInventoryPurchaseHistory;
+use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class InventoryPurchaseController extends Controller
 {
+    use OptimizedQueries;
+
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('invoice_number', 'LIKE', '%' . $search . '%')
@@ -34,9 +38,19 @@ class InventoryPurchaseController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', InventoryPurchase::class);
-        $searchQuery = InventoryPurchase::query()->latest();
+        
+        // Optimized query with eager loading
+        $searchQuery = InventoryPurchase::query()
+            ->select('id', 'invoice_number', 'date', 'supplier_id', 'created_at', 'updated_at')
+            ->with([
+                'supplier:id,name',
+                'listInventoryPurchase:id,inventory_purchase_id,product_id,quantity,total_price'
+            ])
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = InventoryPurchaseResource::collection($searchQuery->paginate(12));
+        
         return Inertia::render('Products/InventoryPurchases/IndexInventoryPurchase', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
@@ -45,72 +59,91 @@ class InventoryPurchaseController extends Controller
 
     public function create(): Response {
         Gate::authorize('create', InventoryPurchase::class);
+        
+        // Use cached data
+        $suppliers = $this->getCachedSuppliers();
+        $products = $this->getCachedProducts();
+        
         return Inertia::render('Products/InventoryPurchases/CreateInventoryPurchase', [
-            'suppliers' => SupplierResource::collection(Supplier::all()),
-            'products' => ProductResource::collection(Product::all()),
-            // 'invoice' => "INV-RSM-" . date('mdY') . "-XXXX"
+            'suppliers' => SupplierResource::collection($suppliers),
+            'products' => ProductResource::collection($products),
         ]);
     }
 
     public function store(InventoryPurchaseRequest $request): RedirectResponse {
         Gate::authorize('create', InventoryPurchase::class);
-        // $count = (InventoryPurchase::max('id') ?? 0) + 1;
-        // $invoiceFormat = 'INV-RSM-' . date('mdY') . "-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+        
         if (empty($request->products)) {
             Session::flash('toast', [ 'message' => 'Silahkan tambah produk terlebih dahulu.', 'type' => 'error' ]);
             return back();
-        } else {
-            $request->validate([
-                'products.*.product_id' => 'required',
-                'products.*.price' => 'required',
-                'products.*.quantity' => 'required'
-            ], [
-                'products.*.product_id.required' => 'Kolom barang wajib diisi.',
-                'products.*.price.required' => 'Kolom harga barang wajib diisi.',
-                'products.*.quantity.required' => 'Kolom total barang wajib diisi.'
-            ]);
-            $create = InventoryPurchase::create([
-                'invoice_number' => $request->invoice_number,
-                'date' => $request->date,
-                'supplier_id' => $request->supplier_id['id'],
-            ]);
-            UpdateInventoryPurchaseHistory::create([
-                'inventory_purchase_id' => $create->id,
-                'user_id' => Auth::user()->id
-            ]);
-            for ($i=0; $i < count($request->products); $i++) {
-                ListInventoryPurchase::create([
-                    'inventory_purchase_id' => $create->id,
-                    'product_id' => $request->products[$i]['product_id']['id'],
-                    'price' => $request->products[$i]['price'],
-                    'quantity' => $request->products[$i]['quantity'],
-                    'total_price' => $request->products[$i]['total_price'],
-                ]);
-                $count = (CenterStock::max('id') ?? 0) + 1;
-                CenterStock::create([
-                    'inventory_purchase_id' => $create->id,
-                    'product_id' => $request->products[$i]['product_id']['id'],
-                    'stock' => $request->products[$i]['quantity'],
-                    'serial_barcode' => $request->products[$i]['product_id']['product_category_id'][0]['product_category_code'] . 'B' . date('mdY') . str_pad($count, 4, '0', STR_PAD_LEFT)
-                ]);
-            }
         }
+        
+        $request->validate([
+            'products.*.product_id' => 'required',
+            'products.*.price' => 'required',
+            'products.*.quantity' => 'required'
+        ], [
+            'products.*.product_id.required' => 'Kolom barang wajib diisi.',
+            'products.*.price.required' => 'Kolom harga barang wajib diisi.',
+            'products.*.quantity.required' => 'Kolom total barang wajib diisi.'
+        ]);
+        
+        $create = InventoryPurchase::create([
+            'invoice_number' => $request->invoice_number,
+            'date' => $request->date,
+            'supplier_id' => $request->supplier_id['id'],
+        ]);
+        
+        UpdateInventoryPurchaseHistory::create([
+            'inventory_purchase_id' => $create->id,
+            'user_id' => Auth::user()->id
+        ]);
+        
+        foreach ($request->products as $product) {
+            ListInventoryPurchase::create([
+                'inventory_purchase_id' => $create->id,
+                'product_id' => $product['product_id']['id'],
+                'price' => $product['price'],
+                'quantity' => $product['quantity'],
+                'total_price' => $product['total_price'],
+            ]);
+            
+            $count = (CenterStock::max('id') ?? 0) + 1;
+            CenterStock::create([
+                'inventory_purchase_id' => $create->id,
+                'product_id' => $product['product_id']['id'],
+                'stock' => $product['quantity'],
+                'serial_barcode' => $product['product_id']['product_category_id'][0]['product_category_code'] . 'B' . date('mdY') . str_pad($count, 4, '0', STR_PAD_LEFT)
+            ]);
+        }
+        
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return to_route('inventoryPurchases.index');
     }
 
     public function show(InventoryPurchase $inventoryPurchase): Response {
         return Inertia::render('Products/InventoryPurchases/ShowInventoryPurchase', [
-            'inventoryPurchase' => new InventoryPurchaseResource($inventoryPurchase)
+            'inventoryPurchase' => new InventoryPurchaseResource($inventoryPurchase->load([
+                'supplier:id,name',
+                'listInventoryPurchase.product:id,product_name'
+            ]))
         ]);
     }
 
     public function edit(InventoryPurchase $inventoryPurchase): Response {
         Gate::authorize('update', $inventoryPurchase);
+        
+        // Use cached data
+        $suppliers = $this->getCachedSuppliers();
+        $products = $this->getCachedProducts();
+        
         return Inertia::render('Products/InventoryPurchases/EditInventoryPurchase', [
-            'inventoryPurchase' => new InventoryPurchaseResource($inventoryPurchase),
-            'suppliers' => SupplierResource::collection(Supplier::all()),
-            'products' => ProductResource::collection(Product::all())
+            'inventoryPurchase' => new InventoryPurchaseResource($inventoryPurchase->load([
+                'supplier:id,name',
+                'listInventoryPurchase.product:id,product_name,product_category_id'
+            ])),
+            'suppliers' => SupplierResource::collection($suppliers),
+            'products' => ProductResource::collection($products)
         ]);
     }
 
@@ -156,17 +189,16 @@ class InventoryPurchaseController extends Controller
         foreach ($request->products as $product) {
             $productId = is_array($product['product_id']) ? $product['product_id']['id'] : $product['product_id'];
 
-            // Cari kategori produk
             $categoryCode = '';
             if (is_array($product['product_id']) && isset($product['product_id']['product_category_id'][0]['product_category_code'])) {
                 $categoryCode = $product['product_id']['product_category_id'][0]['product_category_code'];
             } else {
-                // Jika product_id berupa integer, ambil data dari database
                 $productData = Product::with('productCategory')->find($productId);
                 if ($productData && isset($productData->productCategory->product_category_code)) {
                     $categoryCode = $productData->productCategory->product_category_code;
                 }
             }
+            
             ListInventoryPurchase::updateOrCreate(
                 [
                     'inventory_purchase_id' => $inventoryPurchase->id,
@@ -200,19 +232,11 @@ class InventoryPurchaseController extends Controller
     public function destroy(InventoryPurchase $inventoryPurchase): RedirectResponse {
         Gate::authorize('delete', $inventoryPurchase);
 
-        // Hapus data di tabel list_inventory_purchases terlebih dahulu
-        foreach ($inventoryPurchase->listInventoryPurchase as $item) {
-            $item->delete();
-        }
-
-        foreach ($inventoryPurchase->centerStock as $item) {
-            $item->delete();
-        }
-
-        // Hapus riwayat perubahan
+        // Delete related records
+        ListInventoryPurchase::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
+        CenterStock::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
         UpdateInventoryPurchaseHistory::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
-
-        // Hapus data utama
+        
         $inventoryPurchase->delete();
 
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);

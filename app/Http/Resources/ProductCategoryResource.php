@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\UpdateProductCategoryHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,7 +21,9 @@ class ProductCategoryResource extends JsonResource
             'product_category_name' => $this->product_category_name,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateProductCategoryHistory::with('user')->where('product_category_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateProductCategoryHistory', function() {
+                return $this->updateProductCategoryHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

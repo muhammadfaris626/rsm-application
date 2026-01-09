@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,13 +32,25 @@ class ProductController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Product::class);
-        $searchQuery = Product::query()->latest();
+        
+        // Optimized query with eager loading
+        $searchQuery = Product::query()
+            ->select('id', 'product_category_id', 'product_name', 'serial_barcode', 'created_at', 'updated_at')
+            ->with('productCategory:id,product_category_name')
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = ProductResource::collection($searchQuery->paginate(12));
+        
+        // Cache product categories
+        $productCategories = Cache::remember('product_categories', 600, function() {
+            return ProductCategory::select('id', 'product_category_name')->get();
+        });
+        
         return Inertia::render('Database/Products/IndexProduct', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'productCategories' => ProductCategoryResource::collection(ProductCategory::all())
+            'productCategories' => ProductCategoryResource::collection($productCategories)
         ]);
     }
 

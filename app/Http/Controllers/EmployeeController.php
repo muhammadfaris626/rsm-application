@@ -9,10 +9,12 @@ use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\UpdateEmployeeHistory;
 use App\Models\User;
+use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +22,8 @@ use Illuminate\Support\Str;
 
 class EmployeeController extends Controller
 {
+    use OptimizedQueries;
+
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('employee_number', 'LIKE', '%' . $search . '%')
@@ -36,27 +40,31 @@ class EmployeeController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Employee::class);
-        $searchQuery = Employee::query()->latest();
+        
+        // Optimized query with eager loading
+        $searchQuery = Employee::query()
+            ->select('id', 'employee_number', 'name', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status', 'created_at', 'updated_at')
+            ->with('branch:id,branch_name,branch_code')
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = EmployeeResource::collection($searchQuery->paginate(12));
+        
+        // Use cached branches
+        $branches = $this->getCachedActiveBranches();
+        
         return Inertia::render('Database/Employees/IndexEmployee', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'branches' => BranchResource::collection(Branch::where('status', 'Aktif')->get())
+            'branches' => BranchResource::collection($branches)
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(EmployeeRequest $request): RedirectResponse {
         Gate::authorize('create', Employee::class);
         $employee = Employee::create([
@@ -80,31 +88,28 @@ class EmployeeController extends Controller
             'password' => bcrypt('12345678'),
             'remember_token' => Str::random(10)
         ])->assignRole('karyawan');
+        
+        // Clear employee cache
+        $this->clearRelatedCaches(['active_employees']);
+        
         Session::flash('toast', [ 'message' => 'Data berhasil ditambahkan.' ]);
         return back();
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Employee $employee)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Employee $employee)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(EmployeeRequest $request, Employee $employee): RedirectResponse {
         Gate::authorize('update', $employee);
+        $oldEmployeeNumber = $employee->employee_number;
+        
         $employee->update([
             'employee_number' => $request->employee_number,
             'name' => $request->name,
@@ -118,12 +123,10 @@ class EmployeeController extends Controller
             'employee_id' => $employee->id,
             'user_id' => Auth::user()->id
         ]);
+        
         // Jika username (employee_number) berubah, update data user terkait
-        if ($employee->employee_number !== $request->employee_number) {
-            // Cari user berdasarkan employee_number (username)
-            $user = User::where('username', $employee->employee_number)->first();
-
-            // Jika user ditemukan, update data user
+        if ($oldEmployeeNumber !== $request->employee_number) {
+            $user = User::where('username', $oldEmployeeNumber)->first();
             if ($user) {
                 $user->update([
                     'name' => $request->name,
@@ -132,29 +135,29 @@ class EmployeeController extends Controller
                 ]);
             }
         }
+        
+        // Clear employee caches
+        $this->clearRelatedCaches(['active_employees', "employee_{$oldEmployeeNumber}", "employee_{$request->employee_number}"]);
+        
         Session::flash('toast', [ 'message' => 'Data berhasil diubah.' ]);
         return back();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Employee $employee): RedirectResponse {
-        Gate::authorize('delete', $employee); // Pastikan user punya izin untuk menghapus data
+        Gate::authorize('delete', $employee);
+        
+        $employeeNumber = $employee->employee_number;
 
-        // Hapus data riwayat pengubahan karyawan
         UpdateEmployeeHistory::where('employee_id', $employee->id)->delete();
-
-        // Hapus data Employee
         $employee->delete();
 
-        // Jika user terkait dengan employee (misalnya menggunakan employee_number sebagai username)
-        $user = User::where('username', $employee->employee_number)->first();
-
+        $user = User::where('username', $employeeNumber)->first();
         if ($user) {
-            // Hapus data user jika ditemukan
             $user->delete();
         }
+        
+        // Clear employee caches
+        $this->clearRelatedCaches(['active_employees', "employee_{$employeeNumber}"]);
 
         Session::flash('toast', [ 'message' => 'Data karyawan berhasil dihapus.' ]);
         return back();

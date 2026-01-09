@@ -2,8 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Branch;
-use App\Models\Employee;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,12 +17,20 @@ class MutationResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'employee_id' => Employee::where('id', $this->employee_id)->first(),
-            'from_branch_id' => Branch::where('id', $this->from_branch_id)->first(),
-            'to_branch_id' => Branch::where('id', $this->to_branch_id)->first(),
+            'employee_id' => $this->whenLoaded('employee', function() {
+                return $this->employee;
+            }),
+            'from_branch_id' => $this->whenLoaded('fromBranch', function() {
+                return $this->fromBranch;
+            }),
+            'to_branch_id' => $this->whenLoaded('toBranch', function() {
+                return $this->toBranch;
+            }),
             'transfer_date' => $this->transfer_date,
             'reason' => $this->reason,
-            'approved_by' => Employee::where('id', $this->approved_by)->first(),
+            'approved_by' => $this->whenLoaded('approvedBy', function() {
+                return $this->approvedBy;
+            }),
             'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at

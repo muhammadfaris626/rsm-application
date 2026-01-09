@@ -18,10 +18,15 @@ class ApiLocationController extends Controller
     }
 
     public function index(Request $request) {
-        $query = Location::with('branch');
+        // Optimized with select and eager loading
+        $query = Location::query()
+            ->select('id', 'branch_id', 'coordinates')
+            ->with('branch:id,branch_name,branch_code');
+        
         $this->applySearch($query, $request->search);
         $perPage = $request->get('per_page', 12);
         $locations = $query->paginate($perPage);
+        
         return response()->json([
             'data' => LocationResource::collection($locations)->response()->getData(true),
         ]);
@@ -37,5 +42,4 @@ class ApiLocationController extends Controller
             'data' => $create
         ]);
     }
-
 }

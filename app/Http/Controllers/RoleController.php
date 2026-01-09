@@ -7,8 +7,10 @@ use App\Http\Resources\PermissionResource;
 use App\Http\Resources\RoleResource;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Traits\OptimizedQueries;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
@@ -16,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 class RoleController extends Controller {
+    use OptimizedQueries;
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
@@ -25,43 +28,61 @@ class RoleController extends Controller {
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Role::class);
-        $searchQuery = Role::query()->latest();
+        
+        // Optimized query
+        $searchQuery = Role::query()
+            ->select('id', 'name', 'guard_name', 'created_at', 'updated_at')
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = RoleResource::collection($searchQuery->paginate(12));
+        
+        // Cache permissions
+        $permissions = Cache::remember('all_permissions', 600, function() {
+            return Permission::select('id', 'name')->get();
+        });
+        
         return Inertia::render('Settings/Roles/IndexRole', [
             'fetchData' => $data,
-            'permissions' => PermissionResource::collection(Permission::all()),
+            'permissions' => PermissionResource::collection($permissions),
             'search' => $request->search ?? ''
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(RoleRequest $request): RedirectResponse {
         Gate::authorize('create', Role::class);
         $peran = Role::create(['name' => $request->name]);
         if ($request->has('permissions')) {
             $peran->syncPermissions($request->input('permissions.*.name'));
         }
+        
+        // Clear role cache
+        $this->clearRelatedCaches(['all_roles']);
+        
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return back();
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Role $role): Response {
         Gate::authorize('view', $role);
 
+        // Cache the permission list structure
+        $list = Cache::remember("role_permissions_{$role->id}", 300, function() use ($role) {
+            return $this->buildPermissionsList($role);
+        });
+
+        return Inertia::render('Settings/Roles/ReadRole', [
+            'fetchData' => $list,
+            'namaRole' => str_replace("-", " ", strtoupper($role->name))
+        ]);
+    }
+
+    private function buildPermissionsList(Role $role): array {
         $allPermissions = [
             'USER', 'ROLE', 'PERMISSION', 'PRODUCT-CATEGORY', 'PRODUCT', 'EMPLOYEE', 'BRANCH', 'EXPENDITURE', 'POSITION', 'SUPPLIER', 'LOCATION', 'OPERATIONAL-CENTER', 'OPERATIONAL-BRANCH',
             'MANAGEMENT-STRUCTURE', 'INVENTORY-PURCHASE', 'REQUEST-ORDER', 'BRANCH-PRODUCT', 'CENTER-STOCK', 'SALE', 'REPORT', 'REPORT-BRANCH', 'PERFORMANCE', 'REQUEST-RETURN', 'ATTENDANCE',
@@ -97,14 +118,19 @@ class RoleController extends Controller {
             'TERMINATION'             => 'PEMBERHENTIAN'
         ];
 
+        // Get all role permissions in one query
+        $rolePermissionIds = DB::table('role_has_permissions')
+            ->where('role_id', $role->id)
+            ->pluck('permission_id')
+            ->toArray();
+
         $list = [];
 
         foreach ($allPermissions as $key => $value) {
             $displayName = $categoryNames[$value] ?? $value;
             $list[$key] = ['role_id' => $role->id, 'category' => $displayName];
 
-            // Query untuk mendapatkan permissions berdasarkan kategori
-            $query = Permission::query();
+            $query = Permission::query()->select('id', 'name');
 
             if ($value === 'PRODUCT-CATEGORY') {
                 $query->where('name', 'LIKE', '%PRODUCT-CATEGORY%');
@@ -134,22 +160,13 @@ class RoleController extends Controller {
 
             $permissions = $query->get();
 
-            // Jika tidak ada permission yang ditemukan, tambahkan data kosong untuk debugging
             if ($permissions->isEmpty()) {
                 $list[$key][$displayName] = [];
                 continue;
             }
 
-            // Tambahkan permission ke dalam list berdasarkan kategori
             foreach ($permissions as $data) {
-                $check = DB::table('role_has_permissions')
-                    ->where('role_id', $role->id)
-                    ->where('permission_id', $data->id)
-                    ->exists();
-
-                $status = $check ? 1 : 0;
-
-                // Gunakan ID sebagai key untuk menghindari duplikasi
+                $status = in_array($data->id, $rolePermissionIds) ? 1 : 0;
                 $list[$key][$displayName][$data->id] = [
                     'id' => $data->id,
                     'name' => $data->name,
@@ -158,59 +175,61 @@ class RoleController extends Controller {
             }
         }
 
-        return Inertia::render('Settings/Roles/ReadRole', [
-            'fetchData' => $list,
-            'namaRole' => str_replace("-", " ", strtoupper($role->name))
-        ]);
+        return $list;
     }
 
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Role $role)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(RoleRequest $request, $id): RedirectResponse
     {
         $data = Role::find($id);
         Gate::authorize('update', $data);
-        $data->update([
-            'name' => $request->name
-        ]);
+        $data->update(['name' => $request->name]);
+        
+        // Clear role caches
+        $this->clearRelatedCaches(['all_roles', "role_permissions_{$id}"]);
+        
         Session::flash('toast', ['message' => 'Data berhasil diubah.']);
         return back();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id): RedirectResponse {
         $data = Role::find($id);
         Gate::authorize('delete', $data);
         Role::where('id', $id)->delete();
+        
+        // Clear role caches
+        $this->clearRelatedCaches(['all_roles', "role_permissions_{$id}"]);
+        
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();
     }
 
     public function updateRolePermission($role, $permission) {
-        $checkRolePermission = DB::table('role_has_permissions')->where('role_id', $role)->where('permission_id', $permission)->first();
-        $searchRole = Role::where('id', $role)->first();
-        $searchPermission = Permission::where('id', $permission)->first();
+        $checkRolePermission = DB::table('role_has_permissions')
+            ->where('role_id', $role)
+            ->where('permission_id', $permission)
+            ->first();
+        
+        $searchRole = Role::find($role);
+        $searchPermission = Permission::find($permission);
+        
         if (empty($checkRolePermission)) {
             $searchRole->givePermissionTo($searchPermission);
             $searchPermission->assignRole($searchRole);
             Session::flash('toast', ['message' => 'Perizinan berhasil ditambahkan.']);
-        }else{
+        } else {
             $searchRole->revokePermissionTo($searchPermission);
             $searchPermission->removeRole($searchRole);
             Session::flash('toast', ['message' => 'Perizinan berhasil dihapus.']);
         }
+        
+        // Clear role permission cache
+        Cache::forget("role_permissions_{$role}");
+        
         return back();
     }
 }

@@ -11,16 +11,20 @@ use App\Models\Employee;
 use App\Models\Expenditure;
 use App\Models\OperationalBranch;
 use App\Models\UpdateOperationalBranchHistory;
+use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class OperationalBranchController extends Controller
 {
+    use OptimizedQueries;
+
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
             $query->where('total_cost', 'LIKE', '%' . $search . '%')
@@ -40,16 +44,45 @@ class OperationalBranchController extends Controller
     public function index(Request $request): Response{
         Gate::authorize('viewAny', OperationalBranch::class);
         $user = Auth::user();
-        $employee = Employee::where('employee_number', $user->username)->first();
-        $searchQuery = OperationalBranch::query()->when($user->roles[0]['name'] !== 'root', fn($query) => $query->where('branch_id', $employee->branch_id))->latest();
-        $branch = Auth::user()->roles[0]['name'] == 'root' ? Branch::all() : Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get();
+        
+        // Use cached employee
+        $employee = $user->roles[0]['name'] !== 'root' 
+            ? $this->getCachedEmployee($user->username, true) 
+            : null;
+        
+        // Optimized query with eager loading
+        $searchQuery = OperationalBranch::query()
+            ->select('id', 'branch_id', 'date', 'expenditure_id', 'total_cost', 'description', 'user_id', 'created_at', 'updated_at')
+            ->with([
+                'branch:id,branch_name,branch_code',
+                'expenditure:id,type_of_fee',
+                'user:id,name'
+            ])
+            ->when($user->roles[0]['name'] !== 'root' && $employee, 
+                fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->latest();
+        
         $this->applySearch($searchQuery, $request->search);
         $data = OperationalBranchResource::collection($searchQuery->paginate(12));
+        
+        // Use cached data
+        $expenditures = $this->getCachedExpenditures();
+        
+        // Get appropriate branches
+        $branches = $user->roles[0]['name'] == 'root' 
+            ? $this->getCachedAllBranches() 
+            : ($employee 
+                ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                    ->where('status', 'Aktif')
+                    ->where('id', $employee->branch_id)
+                    ->get() 
+                : collect());
+        
         return Inertia::render('Operationals/Branches/IndexOperationalBranch', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'expenditures' => ExpenditureResource::collection(Expenditure::all()),
-            'branches' => BranchResource::collection($branch)
+            'expenditures' => ExpenditureResource::collection($expenditures),
+            'branches' => BranchResource::collection($branches)
         ]);
     }
 
@@ -108,9 +141,6 @@ class OperationalBranchController extends Controller
         return back();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(OperationalBranch $operationalBranch): RedirectResponse{
         Gate::authorize('delete', $operationalBranch);
         UpdateOperationalBranchHistory::where('op_branch_id', $operationalBranch->id)->delete();

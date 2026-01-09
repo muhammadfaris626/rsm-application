@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,50 +42,77 @@ class SaleController extends Controller
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Sale::class);
         $user = Auth::user();
-        $employee = Employee::where('employee_number', $user->username)->first();
         
+        // Cache employee data for non-root users
+        $employee = null;
+        if ($user->roles[0]['name'] !== 'root') {
+            $employee = Cache::remember("employee_{$user->username}", 300, function() use ($user) {
+                return Employee::select('id', 'employee_number', 'branch_id')
+                    ->where('employee_number', $user->username)
+                    ->first();
+            });
+        }
+        
+        // Optimized query with eager loading
         $searchQuery = Sale::query()
-            ->when($user->roles[0]['name'] !== 'root' && $employee, fn($query) => $query->where('branch_id', $employee->branch_id))
-            ->when($request->branch, function($query) use($request) {
-                $query->where('branch_id', $request->branch);
-            })
-            ->when($request->start_date && $request->end_date, function($query) use($request) {
-                $query->whereBetween('date', [
-                    $request->start_date,
-                    $request->end_date
-                ]);
-            })
-            ->when($request->technician, function($query) use($request) {
-                $query->where('management_structure_id', $request->technician);
-            })
+            ->select('id', 'branch_id', 'invoice_number', 'date', 'management_structure_id', 'created_at', 'updated_at')
+            ->with([
+                'branch:id,branch_name,branch_code',
+                'managementStructure:id,employee_id,position_id',
+                'managementStructure.employee:id,name',
+                'listSale:id,sale_id,total_price'
+            ])
+            ->when($user->roles[0]['name'] !== 'root' && $employee, 
+                fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->when($request->branch, 
+                fn($query) => $query->where('branch_id', $request->branch))
+            ->when($request->start_date && $request->end_date, 
+                fn($query) => $query->whereBetween('date', [$request->start_date, $request->end_date]))
+            ->when($request->technician, 
+                fn($query) => $query->where('management_structure_id', $request->technician))
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
         
         $data = SaleResource::collection($searchQuery->paginate(12));
         
-        // Get branches for filter
-        $branches = $user->roles[0]['name'] == 'root' 
-            ? Branch::where('status', 'Aktif')->get() 
-            : ($employee ? Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get() : collect());
+        // Cache branches for filter
+        $branches = Cache::remember("branches_for_user_{$user->id}", 300, function() use ($user, $employee) {
+            return $user->roles[0]['name'] == 'root' 
+                ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                    ->where('status', 'Aktif')
+                    ->get() 
+                : ($employee 
+                    ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                        ->where('status', 'Aktif')
+                        ->where('id', $employee->branch_id)
+                        ->get() 
+                    : collect());
+        });
         
-        // Get technicians for filter
-        $teknisiPosition = Position::where('position_name', 'Teknisi')->first();
-        $techniciansQuery = ManagementStructure::query();
-        if ($user->roles[0]['name'] !== 'root' && $employee) {
-            $techniciansQuery->where('branch_id', $employee->branch_id);
-        }
-        if ($teknisiPosition) {
-            $techniciansQuery->where('position_id', $teknisiPosition->id);
-        }
-        $techniciansCollection = ManagementStructureResource::collection($techniciansQuery->get());
-        $technicians = [];
-        foreach ($techniciansCollection as $item) {
-            $itemArray = $item->toArray(request());
-            $employeeName = isset($itemArray['employee_id'][0]['name']) ? $itemArray['employee_id'][0]['name'] : 'N/A';
-            $itemArray['label'] = $employeeName;
-            $technicians[] = $itemArray;
-        }
+        // Cache technicians
+        $technicians = Cache::remember("technicians_branch_{$employee?->branch_id}", 300, function() use ($user, $employee) {
+            $teknisiPosition = Position::select('id')->where('position_name', 'Teknisi')->first();
+            
+            $techniciansQuery = ManagementStructure::query()
+                ->select('id', 'employee_id', 'position_id', 'branch_id')
+                ->with('employee:id,name');
+            
+            if ($user->roles[0]['name'] !== 'root' && $employee) {
+                $techniciansQuery->where('branch_id', $employee->branch_id);
+            }
+            if ($teknisiPosition) {
+                $techniciansQuery->where('position_id', $teknisiPosition->id);
+            }
+            
+            return $techniciansQuery->get()->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'employee_id' => $item->employee_id,
+                    'label' => $item->employee?->name ?? 'N/A',
+                ];
+            })->toArray();
+        });
         
         return Inertia::render('Products/Sales/IndexSale', [
             'fetchData' => $data,

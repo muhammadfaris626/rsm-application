@@ -2,9 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Expenditure;
-use App\Models\UpdateOperationalCenterHistory;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,13 +18,19 @@ class OperationalCenterResource extends JsonResource
         return [
             'id' => $this->id,
             'date' => $this->date,
-            'expenditure_id' => ExpenditureResource::collection(Expenditure::where('id', $this->expenditure_id)->get()),
+            'expenditure_id' => $this->whenLoaded('expenditure', function() {
+                return [new ExpenditureResource($this->expenditure)];
+            }, []),
             'total_cost' => $this->total_cost,
             'description' => $this->description,
-            'user_id' => User::where('id', $this->user_id)->first(),
+            'user_id' => $this->whenLoaded('user', function() {
+                return $this->user;
+            }),
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateOperationalCenterHistory::with('user')->where('op_center_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateOperationalCenterHistory', function() {
+                return $this->updateOperationalCenterHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

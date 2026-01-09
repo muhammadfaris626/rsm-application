@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\UpdatePositionHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,7 +20,9 @@ class PositionResource extends JsonResource
             'position_name' => $this->position_name,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdatePositionHistory::with('user')->where('position_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updatePositionHistory', function() {
+                return $this->updatePositionHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

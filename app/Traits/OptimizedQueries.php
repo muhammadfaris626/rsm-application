@@ -77,7 +77,7 @@ trait OptimizedQueries
     protected function getCachedExpenditures()
     {
         return Cache::remember('all_expenditures', 600, function() {
-            return \App\Models\Expenditure::select('id', 'type_of_fee', 'description')->get();
+            return \App\Models\Expenditure::select('id', 'type_of_fee')->get();
         });
     }
 
@@ -97,7 +97,7 @@ trait OptimizedQueries
     protected function getCachedProducts()
     {
         return Cache::remember('all_products', 300, function() {
-            return \App\Models\Product::select('id', 'product_category_id', 'product_name', 'serial_barcode')
+            return \App\Models\Product::select('id', 'product_category_id', 'product_name')
                 ->with('productCategory:id,product_category_name,product_category_code')
                 ->get();
         });
@@ -129,7 +129,7 @@ trait OptimizedQueries
     protected function getCachedApprovalTypes()
     {
         return Cache::remember('approval_types', 600, function() {
-            return \App\Models\ApprovalType::select('id', 'name', 'description')->get();
+            return \App\Models\ApprovalType::select('id', 'approval_type_name')->get();
         });
     }
 

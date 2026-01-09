@@ -18,7 +18,6 @@ class ExpenditureResource extends JsonResource
         return [
             'id' => $this->id,
             'type_of_fee' => $this->type_of_fee,
-            'description' => $this->description,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'last_update' => $this->whenLoaded('updateExpenditureHistory', function() {

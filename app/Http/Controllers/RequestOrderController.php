@@ -65,7 +65,7 @@ class RequestOrderController extends Controller {
         
         // Cache approval types
         $approvalTypes = Cache::remember('approval_types', 600, function() {
-            return ApprovalType::select('id', 'name', 'description')->get();
+            return ApprovalType::select('id', 'approval_type_name', 'created_at', 'updated_at')->get();
         });
         
         return Inertia::render('Products/RequestOrders/IndexRequestOrder', [

@@ -116,7 +116,7 @@ class EmployeeController extends Controller
             'place_of_birth' => $request->place_of_birth,
             'date_of_birth' => $request->date_of_birth,
             'phone' => $request->phone,
-            'branch_id' => $request->branch_id['id'],
+            'branch_id' => isset($request->branch_id['id']) ? $request->branch_id['id'] : $request->branch_id[0]['id'],
             'status' => $request->status
         ]);
         UpdateEmployeeHistory::create([

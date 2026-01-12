@@ -146,6 +146,17 @@ class EmployeeController extends Controller
     public function destroy(Employee $employee): RedirectResponse {
         Gate::authorize('delete', $employee);
         
+        // Cek data terkait untuk mencegah integrity error
+        if (\App\Models\Attendance::where('employee_id', $employee->id)->exists() || 
+            \App\Models\Mutation::where('employee_id', $employee->id)->exists() ||
+            \App\Models\Termination::where('employee_id', $employee->id)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Karyawan ini memiliki data terkait (Absensi/Mutasi/PHK).',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+        
         $employeeNumber = $employee->employee_number;
 
         UpdateEmployeeHistory::where('employee_id', $employee->id)->delete();

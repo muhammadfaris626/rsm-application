@@ -97,6 +97,25 @@ class BranchController extends Controller
 
     public function destroy(Branch $branch): RedirectResponse {
         Gate::authorize('delete', $branch);
+        
+        // Cek apakah cabang masih memiliki data terkait
+        if (\App\Models\Employee::where('branch_id', $branch->id)->exists() ||
+            \App\Models\Location::where('branch_id', $branch->id)->exists() ||
+            \App\Models\BranchProduct::where('branch_id', $branch->id)->exists() ||
+            \App\Models\OperationalBranch::where('branch_id', $branch->id)->exists() ||
+            \App\Models\ManagementStructure::where('branch_id', $branch->id)->exists() ||
+            \App\Models\RequestOrder::where('branch_id', $branch->id)->exists() ||
+            \App\Models\RequestReturn::where('branch_id', $branch->id)->exists() ||
+            \App\Models\Sale::where('branch_id', $branch->id)->exists() ||
+            \App\Models\Mutation::where('from_branch_id', $branch->id)->orWhere('to_branch_id', $branch->id)->exists()) {
+            
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Cabang ini masih memiliki data terkait (Karyawan/Lokasi/Stok/Transaksi/dll).',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateBranchHistory::where('branch_id', $branch->id)->delete();
         $branch->delete();
         

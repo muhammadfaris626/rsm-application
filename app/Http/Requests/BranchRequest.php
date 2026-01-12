@@ -22,10 +22,10 @@ class BranchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'branch_code' => ['required'],
+            'branch_code' => ['required', \Illuminate\Validation\Rule::unique('branches', 'branch_code')->ignore($this->branch)],
             'branch_name' => ['required'],
             'branch_address' => ['required'],
-            'description' => [''],
+            'description' => ['nullable'],
             'status' => ['required']
         ];
     }
@@ -33,6 +33,7 @@ class BranchRequest extends FormRequest
     public function messages(): array {
         return [
             'branch_code.required' => 'Kolom kode cabang wajib diisi.',
+            'branch_code.unique' => 'Kode cabang sudah ada.',
             'branch_name.required' => 'Kolom nama cabang wajib diisi.',
             'branch_address.required' => 'Kolom alamat cabang wajib diisi.',
             'description.required' => 'Kolom profil cabang wajib diisi.',

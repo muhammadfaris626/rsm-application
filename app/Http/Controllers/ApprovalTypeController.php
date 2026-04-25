@@ -24,7 +24,9 @@ class ApprovalTypeController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', ApprovalType::class);
-        $searchQuery = ApprovalType::query()->latest();
+        $searchQuery = ApprovalType::query()
+            ->with('updateApprovalTypeHistory.user')
+            ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = ApprovalTypeResource::collection($searchQuery->paginate(12));
         return Inertia::render('Settings/ApprovalTypes/IndexApprovalType', [

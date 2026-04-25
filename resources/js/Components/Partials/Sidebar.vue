@@ -4,8 +4,6 @@
     import NavigationLink from '@/Components/Custom/NavigationLink.vue';
     import { Link } from '@inertiajs/vue3';
     import { usePage } from "@inertiajs/vue3";
-    import { onMounted, ref } from 'vue';
-    import axios from 'axios';
     const { hasPermission } = usePermission();
     const isRouteActive = (routes) => {
         return routes.some(route => window.route().current(route));
@@ -15,19 +13,6 @@
         const routeEnableValues = Object.values(routes);
         return routeEnableValues.some(route => routeValues.includes(route));
     }
-    const orderCount = ref(0);
-    const returnCount = ref(0);
-
-    const fetchNotifications = async () => {
-        try {
-            const response = await axios.get('/api/notifications/count');
-            orderCount.value = response.data.order_count;
-            returnCount.value = response.data.return_count;
-        } catch (error) {
-            console.error("Gagal mengambil notifikasi:", error);
-        }
-    };
-    onMounted(fetchNotifications);
 </script>
 
 <template>

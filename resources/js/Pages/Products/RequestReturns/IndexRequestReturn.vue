@@ -11,7 +11,7 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
-    defineProps(["fetchData", 'approvalTypes', 'userBranch']);
+    defineProps(["fetchData", 'userBranch']);
     const form = useForm({
         id: "",
         request_order_id: "",

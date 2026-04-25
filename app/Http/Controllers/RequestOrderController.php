@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RequestOrderRequest;
-use App\Http\Resources\ApprovalTypeResource;
 use App\Http\Resources\BranchResource;
 use App\Http\Resources\CenterProductResource;
-use App\Http\Resources\ProductResource;
 use App\Http\Resources\RequestOrderResource;
-use App\Models\ApprovalType;
 use App\Models\Branch;
 use App\Models\BranchProduct;
 use App\Models\CenterStock;
@@ -63,15 +60,9 @@ class RequestOrderController extends Controller {
         
         $this->applySearch($searchQuery, $request->search);
         
-        // Cache approval types
-        $approvalTypes = Cache::remember('approval_types', 600, function() {
-            return ApprovalType::select('id', 'approval_type_name', 'created_at', 'updated_at')->get();
-        });
-        
         return Inertia::render('Products/RequestOrders/IndexRequestOrder', [
             'fetchData' => RequestOrderResource::collection($searchQuery->paginate(12)),
             'search' => $request->search ?? '',
-            'approvalTypes' => ApprovalTypeResource::collection($approvalTypes),
             'userBranch' => $employee?->branch_id ?? 0
         ]);
     }
@@ -82,7 +73,9 @@ class RequestOrderController extends Controller {
         $branch = in_array(Auth::user()->roles[0]['name'], ['root', 'admin-pusat']) ? Branch::all() : Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get();
         return Inertia::render('Products/RequestOrders/CreateRequestOrder', [
             'branches' => BranchResource::collection($branch),
-            'products' => CenterProductResource::collection(CenterStock::all()),
+            'products' => CenterProductResource::collection(
+                CenterStock::with('product:id,product_name,product_category_id')->get()
+            ),
             'ro_number' => "RO-RSM-" . date('mdY') . "-XXXX"
         ]);
     }
@@ -168,7 +161,9 @@ class RequestOrderController extends Controller {
         return Inertia::render('Products/RequestOrders/EditRequestOrder', [
             'requestOrder' => new RequestOrderResource($requestOrder),
             'branches' => BranchResource::collection($branch),
-            'products' => CenterProductResource::collection(CenterStock::all()),
+            'products' => CenterProductResource::collection(
+                CenterStock::with('product:id,product_name,product_category_id')->get()
+            ),
         ]);
     }
 

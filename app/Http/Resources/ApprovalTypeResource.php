@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\UpdateApprovalTypeHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,7 +20,9 @@ class ApprovalTypeResource extends JsonResource
             'approval_type_name' => $this->approval_type_name,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => UpdateApprovalTypeHistory::with('user')->where('approval_type_id', $this->id)->latest()->first(),
+            'last_update' => $this->whenLoaded('updateApprovalTypeHistory', function() {
+                return $this->updateApprovalTypeHistory->sortByDesc('id')->first();
+            }),
         ];
     }
 }

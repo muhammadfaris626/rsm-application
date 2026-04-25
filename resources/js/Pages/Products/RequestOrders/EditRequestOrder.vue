@@ -54,7 +54,7 @@
     const formattedProducts = computed(() => {
         return products.value.map(product => ({
             id: product.id,
-            label: `${product.product_id?.[0].product_name}`,
+            label: product.product_id?.[0]?.product_name ?? '-',
             stock: product.stock || 0,
             serial_barcode: product.serial_barcode
         }));

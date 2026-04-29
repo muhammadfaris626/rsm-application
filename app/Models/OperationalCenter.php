@@ -22,6 +22,6 @@ class OperationalCenter extends Model
     }
 
     public function updateOperationalCenterHistory(): HasMany {
-        return $this->hasMany(UpdateOperationalCenterHistory::class);
+        return $this->hasMany(UpdateOperationalCenterHistory::class, 'op_center_id');
     }
 }

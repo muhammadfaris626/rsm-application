@@ -26,6 +26,6 @@ class OperationalBranch extends Model
     }
 
     public function updateOperationalBranchHistory(): HasMany {
-        return $this->hasMany(UpdateOperationalBranchHistory::class);
+        return $this->hasMany(UpdateOperationalBranchHistory::class, 'op_branch_id');
     }
 }

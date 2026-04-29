@@ -7,6 +7,7 @@ use App\Http\Resources\UserSharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -36,6 +37,10 @@ class HandleInertiaRequests extends Middleware
             'toast' => session('toast'),
             'modalAlert' => [
                 'modalData' => fn () => $request->session()->get('modalData')
+            ],
+            'ziggy' => fn () => [
+                ...(new Ziggy)->toArray(),
+                'location' => $request->url(),
             ],
             'auth.user' => fn () => $request->user()
                 ? new UserSharedResource($request->user())

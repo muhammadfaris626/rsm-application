@@ -24,7 +24,9 @@ class ExpenditureController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Expenditure::class);
-        $searchQuery = Expenditure::query()->latest();
+        $searchQuery = Expenditure::query()
+            ->with('updateExpenditureHistory.user')
+            ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = ExpenditureResource::collection($searchQuery->paginate(12));
         return Inertia::render('Database/Expenditures/IndexExpenditure', [
@@ -78,6 +80,14 @@ class ExpenditureController extends Controller
      */
     public function destroy(Expenditure $expenditure): RedirectResponse {
         Gate::authorize('delete', $expenditure);
+        if ($expenditure->operationalCenter()->exists() || $expenditure->operationalBranch()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Jenis biaya ini masih digunakan pada operasional.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateExpenditureHistory::where('expenditure_id', $expenditure->id)->delete();
         $expenditure->delete();
         Session::flash('toast', [

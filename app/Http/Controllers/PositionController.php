@@ -24,7 +24,9 @@ class PositionController extends Controller
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Position::class);
-        $searchQuery = Position::query()->latest();
+        $searchQuery = Position::query()
+            ->with('updatePositionHistory.user')
+            ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = PositionResource::collection($searchQuery->paginate(12));
         return Inertia::render('Database/Positions/IndexPosition', [
@@ -76,6 +78,14 @@ class PositionController extends Controller
 
     public function destroy(Position $position): RedirectResponse {
         Gate::authorize('delete', $position);
+        if ($position->managementStructure()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Jabatan ini masih digunakan pada struktur manajemen.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdatePositionHistory::where('position_id', $position->id)->delete();
         $position->delete();
         Session::flash('toast', [

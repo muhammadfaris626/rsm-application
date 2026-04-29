@@ -123,6 +123,7 @@ class ReportController extends Controller {
             'orders' => $orders,
             'returns' => $returns,
             'selectBranch' => $request->selectBranch ?? 'CABANG',
+            'selectedBranch' => $request->branch ?? null,
             'penjualanTahunan' => $penjualanTahunan,
             'topPenjualan' => $topPenjualan,
             'allData' => $allData

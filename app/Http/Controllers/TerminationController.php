@@ -19,6 +19,14 @@ class TerminationController extends Controller
 {
     use OptimizedQueries;
 
+    private function fieldIdFromRequest($value): ?int {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        return $value;
+    }
+
     public function index() {
         Gate::authorize('viewAny', Termination::class);
         return Inertia::render('Employees/Terminations/IndexTermination');
@@ -37,28 +45,41 @@ class TerminationController extends Controller
 
     public function store(Request $request): RedirectResponse {
         Gate::authorize('create', Termination::class);
+        $request->validate([
+            'employee_id' => ['required'],
+            'termination_date' => ['required', 'date'],
+            'reason' => ['required'],
+        ], [
+            'employee_id.required' => 'Kolom karyawan wajib diisi.',
+            'termination_date.required' => 'Kolom tanggal pemberhentian wajib diisi.',
+            'reason.required' => 'Kolom keterangan pemberhentian wajib diisi.',
+        ]);
+
+        $employeeId = $this->fieldIdFromRequest($request->employee_id);
+        $employee = Employee::select('id', 'employee_number')
+            ->where('id', $employeeId)
+            ->where('status', 'Aktif')
+            ->first();
+
+        if (!$employee) {
+            Session::flash('toast', ['message' => 'Karyawan aktif tidak ditemukan.', 'type' => 'error']);
+            return back();
+        }
         
         Termination::create([
-            'employee_id' => $request->employee_id['id'],
+            'employee_id' => $employee->id,
             'termination_date' => $request->termination_date,
             'reason' => $request->reason
         ]);
-        
-        // Get employee info first
-        $employee = Employee::select('id', 'employee_number')
-            ->where('id', $request->employee_id['id'])
-            ->first();
-        
-        if ($employee) {
-            // Update employee status
-            $employee->update(['status' => 'Tidak Aktif']);
-            
-            // Delete user
-            User::where('username', $employee->employee_number)->delete();
-            
-            // Clear caches
-            $this->clearRelatedCaches(['active_employees', "employee_{$employee->employee_number}"]);
-        }
+
+        // Update employee status
+        $employee->update(['status' => 'Tidak Aktif']);
+
+        // Delete user
+        User::where('username', $employee->employee_number)->delete();
+
+        // Clear caches
+        $this->clearRelatedCaches(['active_employees', "employee_{$employee->employee_number}"]);
         
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return to_route('terminations.index');
@@ -85,11 +106,12 @@ class TerminationController extends Controller
         // Update employee status
         Employee::where('id', $termination->employee_id)
             ->update(['status' => 'Aktif']);
+        $employee = Employee::select('employee_number')->find($termination->employee_id);
         
         $termination->delete();
         
         // Clear employee cache
-        $this->clearRelatedCaches(['active_employees']);
+        $this->clearRelatedCaches(array_filter(['active_employees', $employee ? "employee_{$employee->employee_number}" : null]));
         
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();

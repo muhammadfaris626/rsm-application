@@ -14,6 +14,10 @@
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
     defineProps(["fetchData", 'employees', 'positions', 'branches']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const employeeName = (value) => firstItem(value)?.name ?? '-';
+    const positionName = (value) => firstItem(value)?.position_name ?? '-';
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
     const form = useForm({
         id: "",
         employee_id: "",
@@ -79,9 +83,9 @@
     const modalUbahData = (data) => {
         showModalUpdate.value = true;
         form.id = data.id;
-        form.employee_id = data.employee_id;
-        form.position_id = data.position_id;
-        form.branch_id = data.branch_id;
+        form.employee_id = Array.isArray(data.employee_id) ? data.employee_id[0] : data.employee_id;
+        form.position_id = Array.isArray(data.position_id) ? data.position_id[0] : data.position_id;
+        form.branch_id = Array.isArray(data.branch_id) ? data.branch_id[0] : data.branch_id;
     }
     const modalHapusData = (data) => {
         showModalDelete.value = true;
@@ -89,9 +93,6 @@
     }
 
     const tambahData = () => {
-        form.employee_id = form.employee_id?.id;
-        form.position_id = form.position_id?.id;
-        form.branch_id = form.branch_id?.id;
         form.post(route('managementStructures.store'), {
             onSuccess: () => {
                 form.reset();
@@ -104,12 +105,6 @@
 
     }
     const ubahData = () => {
-        const employeeId = Array.isArray(form.employee_id) ? form.employee_id[0]?.id : form.employee_id?.id;
-        form.employee_id = employeeId;
-        const positionId = Array.isArray(form.position_id) ? form.position_id[0]?.id : form.position_id?.id;
-        form.position_id = positionId;
-        const branchId = Array.isArray(form.branch_id) ? form.branch_id[0]?.id  : form.branch_id?.id;
-        form.branch_id = branchId;
         form.put(route('managementStructures.update', form.id), {
             onSuccess: () => {
                 form.reset();
@@ -138,7 +133,7 @@
     const formattedEmployees = computed(() => usePage().props.employees.map(
         employee => ({
             ...employee,
-            label: `[ ${employee.branch_id[0].branch_name} ] ${employee.name}`
+            label: `[ ${employee.branch_id?.[0]?.branch_name ?? '-'} ] ${employee.name}`
         })
     ));
 </script>
@@ -265,9 +260,9 @@
                     <template #default>
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-violet-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.employee_id[0].name }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.position_id[0].position_name }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.branch_id[0].branch_name }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ employeeName(data.employee_id) }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ positionName(data.position_id) }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'action'">
                                 <div class="flex items-center space-x-2">
                                     <!-- Lihat Data  -->
@@ -331,7 +326,7 @@
                                                 NAMA KARYAWAN
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.employee_id[0].name }}
+                                                {{ employeeName(form.employee_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -339,7 +334,7 @@
                                                 JABATAN
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.position_id[0].position_name }}
+                                                {{ positionName(form.position_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -347,7 +342,7 @@
                                                 CABANG
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.branch_id[0].branch_name }}
+                                                {{ branchName(form.branch_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -355,7 +350,7 @@
                                                 DIUBAH OLEH
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.last_update.user.name }}
+                                                {{ form.last_update?.user?.name || 'N/A' }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -394,10 +389,10 @@
                                     <InputLabel for="employee_id" value="Nama Karyawan" />
                                     <VueMultiselect
                                         v-model="form.employee_id"
-                                        :options="employees"
+                                        :options="formattedEmployees"
                                         :close-on-select="true"
                                         placeholder="Pilih"
-                                        label="name"
+                                        label="label"
                                         track-by="id"
                                     />
                                     <InputError class="mt-2" :message="form.errors.employee_id" />

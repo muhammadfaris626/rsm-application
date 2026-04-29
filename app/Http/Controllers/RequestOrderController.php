@@ -28,18 +28,21 @@ class RequestOrderController extends Controller {
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('ro_number', 'LIKE', '%' . $search . '%')
-                ->orWhere('date', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('ro_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('date', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', RequestOrder::class);
         $user = Auth::user();
+        $isCentralUser = $user->hasRole(['root', 'admin-pusat']);
         
         // Cache employee data
         $employee = null;
-        if ($user->roles[0]['name'] !== 'root') {
+        if (!$isCentralUser) {
             $employee = Cache::remember("employee_{$user->username}", 300, function() use ($user) {
                 return Employee::select('id', 'employee_number', 'branch_id')
                     ->where('employee_number', $user->username)
@@ -52,10 +55,16 @@ class RequestOrderController extends Controller {
             ->select('id', 'ro_number', 'branch_id', 'date', 'status', 'created_at', 'updated_at')
             ->with([
                 'branch:id,branch_name,branch_code',
-                'listRequestOrder:id,request_order_id,center_stock_id,quantity'
+                'listRequestOrder:id,request_order_id,center_stock_id,quantity,approved_quantity,serial_barcode,status',
+                'listRequestOrder.centerStock:id,product_id,stock,serial_barcode',
+                'listRequestOrder.centerStock.product:id,product_name',
+                'updateRequestOrderHistory.user:id,name',
+                'requestOrderLog.user:id,name'
             ])
-            ->when($user->roles[0]['name'] !== 'root' && $employee, 
+            ->when(!$isCentralUser && $employee,
                 fn($query) => $query->where('branch_id', $employee->branch_id))
+            ->when(!$isCentralUser && !$employee,
+                fn($query) => $query->whereRaw('1 = 0'))
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
@@ -69,8 +78,14 @@ class RequestOrderController extends Controller {
 
     public function create(): Response {
         Gate::authorize('create', RequestOrder::class);
-        $employee = Employee::where('employee_number', Auth::user()->username)->first();
-        $branch = in_array(Auth::user()->roles[0]['name'], ['root', 'admin-pusat']) ? Branch::all() : Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get();
+        $user = Auth::user();
+        $isCentralUser = $user->hasRole(['root', 'admin-pusat']);
+        $employee = $isCentralUser ? null : Employee::where('employee_number', $user->username)->first();
+        $branch = $isCentralUser
+            ? Branch::where('status', 'Aktif')->get()
+            : ($employee
+                ? Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get()
+                : collect());
         return Inertia::render('Products/RequestOrders/CreateRequestOrder', [
             'branches' => BranchResource::collection($branch),
             'products' => CenterProductResource::collection(
@@ -156,10 +171,20 @@ class RequestOrderController extends Controller {
 
     public function edit(RequestOrder $requestOrder): Response {
         Gate::authorize('update', $requestOrder);
-        $employee = Employee::where('employee_number', Auth::user()->username)->first();
-        $branch = in_array(Auth::user()->roles[0]['name'], ['root', 'admin-pusat']) ? Branch::all() : Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get();
+        $user = Auth::user();
+        $isCentralUser = $user->hasRole(['root', 'admin-pusat']);
+        $employee = $isCentralUser ? null : Employee::where('employee_number', $user->username)->first();
+        $branch = $isCentralUser
+            ? Branch::where('status', 'Aktif')->get()
+            : ($employee
+                ? Branch::where('status', 'Aktif')->where('id', $employee->branch_id)->get()
+                : collect());
         return Inertia::render('Products/RequestOrders/EditRequestOrder', [
-            'requestOrder' => new RequestOrderResource($requestOrder),
+            'requestOrder' => new RequestOrderResource($requestOrder->load([
+                'branch:id,branch_code,branch_name,status',
+                'listRequestOrder.centerStock:id,product_id,stock,serial_barcode',
+                'listRequestOrder.centerStock.product:id,product_name',
+            ])),
             'branches' => BranchResource::collection($branch),
             'products' => CenterProductResource::collection(
                 CenterStock::with('product:id,product_name,product_category_id')->get()
@@ -169,6 +194,14 @@ class RequestOrderController extends Controller {
 
     public function update(RequestOrderRequest $request, RequestOrder $requestOrder): RedirectResponse {
         Gate::authorize('update', $requestOrder);
+        if ($requestOrder->status !== 'Sedang diverifikasi') {
+            Session::flash('toast', [
+                'message' => 'Permintaan stok yang sudah diproses tidak dapat diubah.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         $roFormat = "RO-RSM-" . date('mdY') . "-" . str_pad($requestOrder->id, 4, '0', STR_PAD_LEFT);
         if (empty($request->products)) {
             Session::flash('toast', ['message' => 'Silahkan tambah produk terlebih dahulu.', 'type' => 'error']);
@@ -231,9 +264,26 @@ class RequestOrderController extends Controller {
 
     public function destroy(RequestOrder $requestOrder): RedirectResponse {
         Gate::authorize('delete', $requestOrder);
+        if ($requestOrder->status !== 'Sedang diverifikasi') {
+            Session::flash('toast', [
+                'message' => 'Permintaan stok yang sudah diproses tidak dapat dihapus.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
+        if ($requestOrder->branchProduct()->exists() || $requestOrder->requestReturn()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Permintaan stok tidak dapat dihapus karena sudah memiliki barang cabang atau return terkait.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         foreach ($requestOrder->listRequestOrder as $item) {
             $item->delete();
         }
+        RequestOrderLog::where('request_order_id', $requestOrder->id)->delete();
         UpdateRequestOrderHistory::where('request_order_id', $requestOrder->id)->delete();
         $requestOrder->delete();
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
@@ -246,17 +296,21 @@ class RequestOrderController extends Controller {
         ], [
             'approval.required' => 'Kolom persetujuan wajib diisi.'
         ]);
+        $check = RequestOrder::where('id', $id)->first();
+        if (!$check) {
+            Session::flash('toast', ['message' => 'Permintaan stok tidak ditemukan.', 'type' => 'error']);
+            return back();
+        }
+
         RequestOrderLog::create([
             'request_order_id' => $id,
             'user_id' => Auth::user()->id,
             'status' => $request->approval
         ]);
-        $check = RequestOrder::where('id', $id)->first();
-        if ($check) {
-            $check->update([
-                'status' => $request->approval
-            ]);
-        }
+
+        $check->update([
+            'status' => $request->approval
+        ]);
         if ($request->approval == 'Selesai') {
             for ($i=0; $i < count($request->listData); $i++) {
                 $check = CenterStock::where('id', $request->listData[$i]['center_stock_id'])->first();

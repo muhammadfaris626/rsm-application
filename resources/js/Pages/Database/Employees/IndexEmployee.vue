@@ -14,6 +14,8 @@
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
     defineProps(["fetchData", 'branches']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
     const form = useForm({
         id: "",
         employee_number: "",
@@ -88,12 +90,11 @@
         showModalUpdate.value = true;
         form.id = data.id;
         form.employee_number = data.employee_number;
-        form.employee_number = data.employee_number;
         form.name = data.name;
         form.place_of_birth = data.place_of_birth;
         form.date_of_birth = data.date_of_birth;
         form.phone = data.phone;
-        form.branch_id = data.branch_id;
+        form.branch_id = firstItem(data.branch_id);
         form.status = data.status;
     }
     const modalHapusData = (data) => {
@@ -217,7 +218,7 @@
                     <template #default>
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.branch_id[0]['branch_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.employee_number }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.name }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.place_of_birth+', '+data.date_of_birth }}</TableDataCell>
@@ -390,7 +391,7 @@
                                             CABANG
                                         </th>
                                         <td class="px-6 py-4">
-                                            {{ form.branch_id[0]['branch_name'] }}
+                                            {{ branchName(form.branch_id) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -443,7 +444,7 @@
                                             DIUBAH OLEH
                                         </th>
                                         <td class="px-6 py-4">
-                                            {{ form.last_update.user.name }}
+                                            {{ form.last_update?.user?.name ?? '-' }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

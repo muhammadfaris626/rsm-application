@@ -23,11 +23,26 @@ class ProductController extends Controller
 {
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('product_name', 'LIKE', '%' . $search . '%')
-                ->orWhereHas('productCategory', function($query) use($search) {
-                    $query->where('product_category_name', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('product_name', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('productCategory', function($query) use($search) {
+                        $query->where('product_category_name', 'LIKE', '%' . $search . '%');
+                    });
                 });
         });
+    }
+
+    private function fieldIdFromRequest($value): mixed
+    {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        if (is_object($value)) {
+            return $value->id ?? null;
+        }
+
+        return $value;
     }
 
     public function index(Request $request): Response {
@@ -36,7 +51,10 @@ class ProductController extends Controller
         // Optimized query with eager loading
         $searchQuery = Product::query()
             ->select('id', 'product_category_id', 'product_name', 'created_at', 'updated_at')
-            ->with('productCategory:id,product_category_name')
+            ->with([
+                'productCategory:id,product_category_name',
+                'updateProductHistory.user',
+            ])
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
@@ -62,7 +80,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request): RedirectResponse {
         Gate::authorize('create', Product::class);
         $product = Product::create([
-            'product_category_id' => $request->product_category_id['id'],
+            'product_category_id' => $this->fieldIdFromRequest($request->product_category_id),
             'product_name' => $request->product_name
         ]);
         UpdateProductHistory::create([
@@ -86,7 +104,7 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product): RedirectResponse {
         Gate::authorize('update', $product);
         $product->update([
-            'product_category_id' => $request->product_category_id['id'],
+            'product_category_id' => $this->fieldIdFromRequest($request->product_category_id),
             'product_name' => $request->product_name
         ]);
         UpdateProductHistory::create([
@@ -99,6 +117,16 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse {
         Gate::authorize('delete', $product);
+        if ($product->listInventoryPurchase()->exists() ||
+            $product->branchProduct()->exists() ||
+            $product->centerStock()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Barang ini masih digunakan pada stok atau transaksi.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateProductHistory::where('product_id', $product->id)->delete();
         $product->delete();
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);

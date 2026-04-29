@@ -20,7 +20,7 @@
 </script>
 
 <template>
-    <Head title="Tambah Mutasi" />
+    <Head title="Tambah Pemberhentian" />
     <AuthenticatedLayout>
         <div class="grid grid-cols-1 h-full">
             <div class="pb-4 border-b-2 border-dashed dark:border-gray-700">
@@ -87,7 +87,7 @@
                     </div>
                     <div class="mt-6">
                         <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">SIMPAN</button>
-                        <Link :href="route('mutations.index')" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">KEMBALI</Link>
+                        <Link :href="route('terminations.index')" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">KEMBALI</Link>
                     </div>
                 </form>
             </div>

@@ -18,7 +18,7 @@ use Inertia\Response;
 class DashboardController extends Controller {
     public function index(Request $request): Response {
         $user = Auth::user();
-        $userRole = $user->roles[0]['name'];
+        $userRole = $user->roles->first()?->name;
         $employee = null;
         
         // Cache key untuk data user

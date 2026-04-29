@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/reports', ReportController::class);
         Route::resource('/reportBranches', ReportBranchController::class);
         Route::get('/cetak', [ReportController::class, 'cetak'])->name('cetak');
+        Route::get('/cetakBranch', [ReportBranchController::class, 'cetak'])->name('cetakBranch');
         Route::get('/export', [ReportController::class, 'export'])->name('export');
         Route::get('/exportBranch', [ReportBranchController::class, 'export'])->name('exportBranch');
         Route::resource('/managementStructures', ManagementStructureController::class);

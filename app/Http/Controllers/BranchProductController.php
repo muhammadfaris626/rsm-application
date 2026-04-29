@@ -21,22 +21,25 @@ class BranchProductController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->whereHas('branch', function($query) use($search) {
-                $query->where('branch_name', 'LIKE', '%' . $search . '%');
-            })
-            ->orWhereHas('product', function($query) use($search) {
-                $query->where('product_name', 'LIKE', '%' . $search . '%');
-            })
-            ->orWhere('quantity', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->whereHas('branch', function($query) use($search) {
+                    $query->where('branch_name', 'LIKE', '%' . $search . '%');
+                })
+                ->orWhereHas('product', function($query) use($search) {
+                    $query->where('product_name', 'LIKE', '%' . $search . '%');
+                })
+                ->orWhere('quantity', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', BranchProduct::class);
         $user = Auth::user();
+        $isCentralUser = $user->hasRole(['root', 'admin-pusat']);
         
         // Use cached employee
-        $employee = $user->roles[0]['name'] !== 'root' 
+        $employee = !$isCentralUser
             ? $this->getCachedEmployee($user->username, true) 
             : null;
         
@@ -45,9 +48,11 @@ class BranchProductController extends Controller
                 'product:id,product_name,product_category_id', 
                 'branch:id,branch_name,branch_code'
             ])
-            ->when($user->roles[0]['name'] !== 'root' && $employee, 
+            ->when(!$isCentralUser && $employee,
                 fn($query) => $query->where('branch_id', $employee->branch_id))
-            ->selectRaw('branch_id, product_id, SUM(quantity) as total_stock, MAX(created_at) as latest_created_at')
+            ->when(!$isCentralUser && !$employee,
+                fn($query) => $query->whereRaw('1 = 0'))
+            ->selectRaw('MIN(id) as id, branch_id, product_id, SUM(quantity) as total_stock, MAX(serial_barcode) as serial_barcode, MAX(created_at) as latest_created_at')
             ->groupBy('branch_id', 'product_id')
             ->orderByDesc('latest_created_at');
 

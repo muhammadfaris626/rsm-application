@@ -36,7 +36,7 @@ class UserRequest extends FormRequest
                 Rule::excludeIf((!empty($this->id) && empty($this->password))),
                 'required', 'min:8',
             ],
-            'roles' => ['']
+            'roles' => ['required', 'exists:roles,id']
         ];
     }
 
@@ -50,6 +50,8 @@ class UserRequest extends FormRequest
             'email.unique' => 'Email has been used',
             'password.required' => 'The password field is required',
             'password.min' => 'Minimum password :min characters.',
+            'roles.required' => 'Kolom peran wajib diisi.',
+            'roles.exists' => 'Peran yang dipilih tidak valid.',
             // 'password.confirmed' => 'Password dan konfirmasi password tidak cocok.'
         ];
     }

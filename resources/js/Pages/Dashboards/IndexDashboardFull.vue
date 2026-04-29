@@ -5,23 +5,23 @@
     import VueMultiselect from "vue-multiselect";
     import TextInput from "@/Components/TextInput.vue";
     import VueApexCharts from 'vue3-apexcharts';
-    
+
     const props = defineProps(['branches', 'sales', 'employeeActive', 'branchActive', 'expenditures', 'profile', 'userRoleVisitor', 'recentSales', 'recentOrders', 'topProducts', 'monthlyStats']);
-    
+
     const selectBranch = ref(''), selectStartDate = ref(''), selectEndDate = ref('');
     let optionBranch = ref(selectBranch), optionStartDate = ref(selectStartDate), optionEndDate = ref(selectEndDate);
     const showFilters = ref(false);
-    
+
     const hasActiveFilters = computed(() => {
         return selectBranch.value || selectStartDate.value || selectEndDate.value;
     });
-    
+
     const clearFilters = () => {
         selectBranch.value = '';
         selectStartDate.value = '';
         selectEndDate.value = '';
     };
-    
+
     const filterUrl = computed(() => {
         let url = new URL(route('dashboard'));
         if (optionBranch.value) {
@@ -33,7 +33,7 @@
         }
         return url;
     });
-    
+
     watch(() => filterUrl.value, (updatedFilterUrl) => {
         router.visit(updatedFilterUrl, {
             preserveScroll: true,
@@ -41,7 +41,7 @@
             replace: true,
         });
     });
-    
+
     onMounted(() => {
         if (window.location.search) {
             router.visit(route("dashboard"), {
@@ -49,49 +49,49 @@
             });
         }
     });
-    
+
     function formatRupiah(value) {
         return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(value);
     }
-    
+
     // Calculate totals
     const totalOmzet = computed(() => {
         return (props.sales || []).reduce((sum, item) => sum + Number(item.total_price || 0), 0);
     });
-    
+
     const totalPengeluaran = computed(() => {
         return (props.expenditures || []).reduce((sum, item) => sum + Number(item.total_cost || 0), 0);
     });
-    
+
     const profit = computed(() => {
         return totalOmzet.value - totalPengeluaran.value;
     });
-    
+
     const profitPercentage = computed(() => {
         if (totalOmzet.value === 0) return 0;
         return ((profit.value / totalOmzet.value) * 100).toFixed(1);
     });
-    
+
     // Chart data for revenue vs expenses
     const revenueExpenseChart = computed(() => {
         const salesData = props.sales || [];
         const expenseData = props.expenditures || [];
-        
+
         // Group by date
         const salesByDate = {};
         salesData.forEach(sale => {
             const date = new Date(sale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
             salesByDate[date] = (salesByDate[date] || 0) + Number(sale.total_price || 0);
         });
-        
+
         const expensesByDate = {};
         expenseData.forEach(exp => {
             const date = new Date(exp.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
             expensesByDate[date] = (expensesByDate[date] || 0) + Number(exp.total_cost || 0);
         });
-        
+
         const dates = [...new Set([...Object.keys(salesByDate), ...Object.keys(expensesByDate)])].sort();
-        
+
         return {
             series: [{
                 name: 'Omzet',
@@ -134,7 +134,7 @@
             }
         };
     });
-    
+
     // Pie chart for profit breakdown
     const profitChart = computed(() => {
         return {
@@ -168,18 +168,18 @@
             <div class="flex flex-col gap-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard111</h1>
                         <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">Selamat datang kembali! Berikut ringkasan aktivitas hari ini.</p>
                     </div>
                     <div class="flex items-center justify-end">
-                        <button @click="showFilters = !showFilters" 
+                        <button @click="showFilters = !showFilters"
                                 class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 dark:focus:ring-blue-800">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                             </svg>
                             Filter
-                            <span v-if="hasActiveFilters" class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">{{ 
-                                [selectBranch, selectStartDate, selectEndDate].filter(f => f).length 
+                            <span v-if="hasActiveFilters" class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">{{
+                                [selectBranch, selectStartDate, selectEndDate].filter(f => f).length
                             }}</span>
                         </button>
                     </div>
@@ -203,7 +203,7 @@
                                 />
                             </div>
                         </div>
-                        
+
                         <!-- Start Date Filter -->
                         <div class="flex flex-col flex-1 min-w-[200px] max-w-full">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 whitespace-nowrap">Dari Tanggal</label>
@@ -216,7 +216,7 @@
                                 />
                             </div>
                         </div>
-                        
+
                         <!-- End Date Filter -->
                         <div class="flex flex-col flex-1 min-w-[200px] max-w-full">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 whitespace-nowrap">Sampai Tanggal</label>
@@ -230,10 +230,10 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Clear Filters Button -->
                     <div v-if="hasActiveFilters" class="mt-4 flex justify-end">
-                        <button @click="clearFilters" 
+                        <button @click="clearFilters"
                                 class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-300 rounded-lg hover:bg-red-100 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -401,7 +401,7 @@
                     </div>
                     <div class="p-6">
                         <div v-if="recentSales && recentSales.length > 0" class="space-y-4">
-                            <div v-for="(sale, index) in recentSales.slice(0, 5)" :key="index" 
+                            <div v-for="(sale, index) in recentSales.slice(0, 5)" :key="index"
                                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                                 <div class="flex items-center gap-3">
                                     <div class="bg-green-100 dark:bg-green-900 rounded-lg p-2">
@@ -430,7 +430,7 @@
                     </div>
                     <div class="p-6">
                         <div v-if="recentOrders && recentOrders.length > 0" class="space-y-4">
-                            <div v-for="(order, index) in recentOrders.slice(0, 5)" :key="index" 
+                            <div v-for="(order, index) in recentOrders.slice(0, 5)" :key="index"
                                  class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                                 <div class="flex items-center gap-3">
                                     <div class="bg-blue-100 dark:bg-blue-900 rounded-lg p-2">

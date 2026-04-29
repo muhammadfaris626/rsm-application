@@ -1,6 +1,6 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { ref, computed, watch, onMounted } from 'vue';
+    import { ref, computed, watch } from 'vue';
     import { usePage, useForm, router, Head } from '@inertiajs/vue3';
     import { usePermission } from '@/Composables/permissions';
     import VueMultiselect from "vue-multiselect";
@@ -14,17 +14,19 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     const { hasPermission } = usePermission();
-    defineProps(['cabangSendiri', 'sales', 'expenditures', 'purchases', 'orders', 'returns', 'penjualanTahunan', 'topPenjualan', 'allData']);
-    const selectBranch = ref(''), selectStartDate = ref(''), selectEndDate = ref('');
-    let optionBranch = ref(selectBranch), optionStartDate = ref(selectStartDate), optionEndDate = ref(selectEndDate);
+    const props = defineProps(['cabangSendiri', 'sales', 'expenditures', 'purchases', 'orders', 'returns', 'penjualanTahunan', 'topPenjualan', 'allData', 'selectedBranch']);
+    const selectedBranchOption = props.selectedBranch
+        ? props.cabangSendiri.find(branch => branch.id === Number(props.selectedBranch))
+        : props.cabangSendiri?.[0];
+    const selectBranch = ref(selectedBranchOption || ""), selectStartDate = ref(''), selectEndDate = ref('');
     const filterUrl = computed(() => {
         let url = new URL(route('reportBranches.index'));
-        if (optionBranch.value) {
-            url.searchParams.append("branch", optionBranch.value.id);
+        if (selectBranch.value?.id) {
+            url.searchParams.append("branch", selectBranch.value.id);
         }
-        if (optionStartDate.value && optionEndDate.value) {
-            url.searchParams.append("start_date", optionStartDate.value);
-            url.searchParams.append("end_date", optionEndDate.value);
+        if (selectStartDate.value && selectEndDate.value) {
+            url.searchParams.append("start_date", selectStartDate.value);
+            url.searchParams.append("end_date", selectEndDate.value);
         }
         return url;
     });
@@ -35,14 +37,6 @@
             replace: true
         });
     });
-    onMounted(() => {
-        if (window.location.search) {
-            router.visit(route("reportBranches.index"), {
-                replace: true
-            });
-        }
-    });
-
     function formatRupiah(value) {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
@@ -161,20 +155,22 @@
         tanggal_selesai: ""
     });
     watch(selectCetak, (newValue) => {
+        if (!newValue) return;
         form.pilihan = newValue.pilihan;
-        form.branch_id = usePage().props.cabangSendiri[0].id;
-        form.tanggal_mulai = optionStartDate;
-        form.tanggal_selesai = optionEndDate;
+        form.branch_id = selectBranch.value?.id ?? props.cabangSendiri?.[0]?.id ?? "";
+        form.tanggal_mulai = selectStartDate.value;
+        form.tanggal_selesai = selectEndDate.value;
         // form.get(route('cetak'));
-        const url = route('cetak', form);
+        const url = route('cetakBranch', form);
         window.open(url, '_blank');
     });
     const selectExport = ref('');
     watch(selectExport, (newValue) => {
+        if (!newValue) return;
         form.pilihan = newValue.pilihan;
-        form.branch_id = optionBranch.value.id;
-        form.tanggal_mulai = optionStartDate;
-        form.tanggal_selesai = optionEndDate;
+        form.branch_id = selectBranch.value?.id ?? props.cabangSendiri?.[0]?.id ?? "";
+        form.tanggal_mulai = selectStartDate.value;
+        form.tanggal_selesai = selectEndDate.value;
         const url = route('exportBranch', form);
         window.open(url);
     });
@@ -232,6 +228,19 @@
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Cabang:</span>
+                            <div class="w-56">
+                                <VueMultiselect
+                                    v-model="selectBranch"
+                                    :options="cabangSendiri"
+                                    :close-on-select="true"
+                                    placeholder="Pilih cabang"
+                                    label="branch_name"
+                                    track-by="id"
+                                />
+                            </div>
+                        </div>
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Dari:</span>
                             <div class="w-40">

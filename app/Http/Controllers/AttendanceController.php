@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Resources\EmployeeResource;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Traits\OptimizedQueries;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 class AttendanceController extends Controller {
+    use OptimizedQueries;
 
     public function index() {
         Gate::authorize('viewAny', Attendance::class);
@@ -23,23 +26,50 @@ class AttendanceController extends Controller {
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(): Response
     {
-        //
+        Gate::authorize('create', Attendance::class);
+
+        return Inertia::render('Employees/Attendances/CreateAttendance', [
+            'employees' => EmployeeResource::collection($this->getCachedActiveEmployees()),
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        //
+        Gate::authorize('create', Attendance::class);
+
+        $request->validate([
+            'employee_id.id' => ['required', 'exists:employees,id'],
+            'work_date' => ['required', 'date'],
+            'check_in' => ['nullable', 'date'],
+            'check_out' => ['nullable', 'date', 'after_or_equal:check_in'],
+        ]);
+
+        Attendance::updateOrCreate(
+            [
+                'employee_id' => $request->employee_id['id'],
+                'work_date' => $request->work_date,
+            ],
+            [
+                'check_in' => $request->filled('check_in') ? Carbon::parse($request->check_in) : null,
+                'check_out' => $request->filled('check_out') ? Carbon::parse($request->check_out) : null,
+            ],
+        );
+
+        Session::flash('toast', ['message' => 'Data berhasil disimpan.']);
+        return to_route('attendances.index');
     }
 
     /**
      * Display the specified resource.
      */
     public function show($id) {
+        Gate::authorize('viewAny', Attendance::class);
+
         return Inertia::render('Employees/Attendances/ShowAttendance', [
             'id' => $id
         ]);

@@ -10,7 +10,6 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import ApiTablePagination from '@/Components/Custom/ApiTablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
-    import { Inertia } from '@inertiajs/inertia';
     const { hasPermission } = usePermission();
 
     const form = useForm({
@@ -72,7 +71,7 @@
                 form.reset();
                 form.clearErrors();
                 showModalDelete.value = false;
-                Inertia.visit(window.location.href, { only: ['locations'] });
+                fetchLocations();
             }
         });
     }
@@ -148,7 +147,7 @@
                     <template #default>
                         <TableRow v-for="(data, index) in locations" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-teal-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.branch.name }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ data.branch?.name ?? '-' }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.coordinates }}</TableDataCell>
                             <TableDataCell :status="'action'">
                                 <template v-if="hasPermission('location: delete')">

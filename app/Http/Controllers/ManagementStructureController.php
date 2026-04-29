@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\ManagementStructure;
 use App\Models\Position;
+use App\Models\Sale;
 use App\Models\UpdateManagementStructureHistory;
 use App\Traits\OptimizedQueries;
 use Illuminate\Support\Facades\Gate;
@@ -28,7 +29,8 @@ class ManagementStructureController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->whereHas('employee', function($query) use($search) {
+            $query->where(function($query) use($search) {
+                $query->whereHas('employee', function($query) use($search) {
                     $query->where('name', 'LIKE', '%' . $search . '%');
                 })
                 ->orWhereHas('position', function($query) use($search) {
@@ -37,7 +39,16 @@ class ManagementStructureController extends Controller
                 ->orWhereHas('branch', function($query) use($search) {
                     $query->where('branch_name', 'LIKE', '%' . $search . '%');
                 });
+            });
         });
+    }
+
+    private function fieldIdFromRequest($value): ?int {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        return $value;
     }
 
     public function index(Request $request): Response {
@@ -49,7 +60,8 @@ class ManagementStructureController extends Controller
             ->with([
                 'employee:id,name,employee_number',
                 'position:id,position_name',
-                'branch:id,branch_name,branch_code'
+                'branch:id,branch_name,branch_code',
+                'updateManagementStructureHistory.user:id,name'
             ])
             ->latest();
         
@@ -78,9 +90,9 @@ class ManagementStructureController extends Controller
     public function store(ManagementStructureRequest $request): RedirectResponse {
         Gate::authorize('create', ManagementStructure::class);
         $managementStructure = ManagementStructure::create([
-            'employee_id' => $request->employee_id,
-            'position_id' => $request->position_id,
-            'branch_id'   => $request->branch_id
+            'employee_id' => $this->fieldIdFromRequest($request->employee_id),
+            'position_id' => $this->fieldIdFromRequest($request->position_id),
+            'branch_id'   => $this->fieldIdFromRequest($request->branch_id)
         ]);
         UpdateManagementStructureHistory::create([
             'management_structure_id' => $managementStructure->id,
@@ -105,9 +117,9 @@ class ManagementStructureController extends Controller
     public function update(ManagementStructureRequest $request, ManagementStructure $managementStructure): RedirectResponse {
         Gate::authorize('update', $managementStructure);
         $managementStructure->update([
-            'employee_id' => $request->employee_id,
-            'position_id' => $request->position_id,
-            'branch_id'   => $request->branch_id
+            'employee_id' => $this->fieldIdFromRequest($request->employee_id),
+            'position_id' => $this->fieldIdFromRequest($request->position_id),
+            'branch_id'   => $this->fieldIdFromRequest($request->branch_id)
         ]);
         UpdateManagementStructureHistory::create([
             'management_structure_id' => $managementStructure->id,
@@ -121,6 +133,14 @@ class ManagementStructureController extends Controller
 
     public function destroy(ManagementStructure $managementStructure): RedirectResponse {
         Gate::authorize('delete', $managementStructure);
+        if (Sale::where('management_structure_id', $managementStructure->id)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Struktur manajemen tidak dapat dihapus karena sudah dipakai pada data penjualan.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateManagementStructureHistory::where('management_structure_id', $managementStructure->id)->delete();
         $managementStructure->delete();
         Session::flash('toast', [

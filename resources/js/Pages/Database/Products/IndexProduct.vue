@@ -15,6 +15,8 @@
     import { usePermission } from '@/Composables/permissions';
     import axios from 'axios';
     defineProps(["fetchData", 'productCategories']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const categoryName = (value) => firstItem(value)?.product_category_name ?? '-';
     const form = useForm({
         id: "",
         product_category_id: "",
@@ -83,7 +85,7 @@
     const modalUbahData = (data) => {
         showModalUpdate.value = true;
         form.id = data.id;
-        form.product_category_id = data.product_category_id;
+        form.product_category_id = firstItem(data.product_category_id);
         form.product_name = data.product_name;
     }
     const modalHapusData = (data) => {
@@ -265,7 +267,7 @@
                     <template #default>
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-emerald-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.product_category_id[0]['product_category_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ categoryName(data.product_category_id) }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.product_name }}</TableDataCell>
                             <TableDataCell :status="'action'">
                                 <template v-if="hasPermission('product: read')">
@@ -378,7 +380,7 @@
                                                 KATEGORI BARANG
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.product_category_id[0]['product_category_name'] }}
+                                                {{ categoryName(form.product_category_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -394,7 +396,7 @@
                                                 DIUBAH OLEH
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.last_update.user.name }}
+                                                {{ form.last_update?.user?.name ?? '-' }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

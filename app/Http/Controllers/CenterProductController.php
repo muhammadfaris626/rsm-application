@@ -19,10 +19,12 @@ class CenterProductController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->whereHas('product', function($query) use($search) {
-                $query->where('product_name', 'LIKE', '%' . $search . '%');
-            })
-            ->orWhere('stock', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->whereHas('product', function($query) use($search) {
+                    $query->where('product_name', 'LIKE', '%' . $search . '%');
+                })
+                ->orWhere('stock', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 

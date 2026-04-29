@@ -12,6 +12,10 @@
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
     defineProps(["fetchData", 'userBranch']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const requestOrderNumber = (value) => firstItem(value)?.ro_number ?? '-';
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
+    const lastUpdateName = (value) => value?.user?.name ?? '-';
     const form = useForm({
         id: "",
         request_order_id: "",
@@ -114,6 +118,7 @@
     const page = usePage();
     const userRoles = page.props.auth.user.roles;
     const userBranchId = page.props.userBranch;
+    const isCentralUser = computed(() => userRoles.includes("root") || userRoles.includes("admin-pusat"));
     const approvalOptions = computed(() => {
         const optionsMap = {
             "Sedang diverifikasi": ["Pengiriman barang"],
@@ -127,11 +132,11 @@
     const canViewSelect = computed(() => {
         const rootAdminStatuses = ["Tiba di lokasi", "Pengecekan barang", 'Pengiriman barang'];
         const branchStatuses = ['Sedang diverifikasi'];
-        if (userRoles.includes("root") || userRoles.includes("admin-pusat")) {
+        if (isCentralUser.value) {
             return rootAdminStatuses.includes(form.status);
         }
         if (userRoles.includes("admin-branch")) {
-            return branchStatuses.includes(form.status) && userBranchId === form.branch_id.id;
+            return branchStatuses.includes(form.status) && userBranchId === firstItem(form.branch_id)?.id;
         }
         return false;
     });
@@ -142,6 +147,16 @@
                 form.reset();
                 form.clearErrors();
                 showModalApproval.value = false;
+            }
+        });
+    }
+
+    const hapusData = () => {
+        form.delete(route('requestReturns.destroy', form.id), {
+            onSuccess: () => {
+                form.reset();
+                form.clearErrors();
+                showModalDelete.value = false;
             }
         });
     }
@@ -219,9 +234,9 @@
                     <template #default>
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'" class="font-semibold text-gray-600">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'" class="font-bold text-gray-900">{{ data.request_order_id[0].ro_number }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="font-bold text-gray-900">{{ requestOrderNumber(data.request_order_id) }}</TableDataCell>
                             <TableDataCell :status="'record'" class="font-bold text-purple-700">{{ data.request_number }}</TableDataCell>
-                            <TableDataCell :status="'record'" class="text-gray-700">{{ data.branch_id.branch_name }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-700">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'record'" class="text-gray-600">{{ formatTanggal(data.date) }}</TableDataCell>
                             <TableDataCell :status="'record'">
                                 <button 
@@ -248,8 +263,20 @@
                                             </svg>
                                         </button>
                                     </template>
+                                    <!-- Ubah Data  -->
+                                    <template v-if="hasPermission('request-return: update') && data.status === 'Sedang diverifikasi'">
+                                        <Link
+                                            :href="route('requestReturns.edit', data.id)"
+                                            class="text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm p-2 text-center inline-flex items-center shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-110"
+                                            title="Ubah"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                                            </svg>
+                                        </Link>
+                                    </template>
                                     <!-- Hapus Data  -->
-                                    <template v-if="hasPermission('request-return: delete')">
+                                    <template v-if="hasPermission('request-return: delete') && data.status === 'Sedang diverifikasi'">
                                         <button 
                                             @click="modalDelete(data)" 
                                             type="button" 
@@ -297,7 +324,7 @@
                                             NOMOR RO
                                         </th>
                                         <td class="px-6 py-4 font-bold">
-                                            {{ form.request_order_id[0].ro_number }}
+                                            {{ requestOrderNumber(form.request_order_id) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -313,7 +340,7 @@
                                             CABANG
                                         </th>
                                         <td class="px-6 py-4 font-bold">
-                                            {{ form.branch_id.branch_name }}
+                                            {{ branchName(form.branch_id) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -362,7 +389,7 @@
                                             DIUBAH OLEH
                                         </th>
                                         <td class="px-6 py-4">
-                                            {{ form.last_update.user.name }}
+                                            {{ lastUpdateName(form.last_update) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -405,7 +432,7 @@
                                                 NOMOR RO
                                             </th>
                                             <td class="">
-                                                : {{ form.request_order_id[0].ro_number }}
+                                                : {{ requestOrderNumber(form.request_order_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -421,7 +448,7 @@
                                                 PERMINTAAN DARI
                                             </th>
                                             <td class="">
-                                                : {{ form.branch_id.branch_name }}
+                                                : {{ branchName(form.branch_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -429,7 +456,7 @@
                                                 ATAS NAMA
                                             </th>
                                             <td class="">
-                                                : {{ form.last_update.user.name }}
+                                                : {{ lastUpdateName(form.last_update) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">

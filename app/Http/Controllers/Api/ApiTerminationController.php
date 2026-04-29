@@ -11,11 +11,13 @@ class ApiTerminationController extends Controller
 {
     private function applySearch($query, $search) {
         if (!empty($search)) {
-            $query->whereHas('employee', function($q) use($search) {
-                $q->where('employee_number', 'LIKE', "%{$search}%")
-                    ->orWhere('name', 'LIKE', "%{$search}%");
-            })->orWhere('termination_date', 'LIKE', "%{$search}%")
-            ->orWhere('reason', 'LIKE', "%{$search}%");
+            $query->where(function($query) use($search) {
+                $query->whereHas('employee', function($q) use($search) {
+                    $q->where('employee_number', 'LIKE', "%{$search}%")
+                        ->orWhere('name', 'LIKE', "%{$search}%");
+                })->orWhere('termination_date', 'LIKE', "%{$search}%")
+                ->orWhere('reason', 'LIKE', "%{$search}%");
+            });
         }
     }
 

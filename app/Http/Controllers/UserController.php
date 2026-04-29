@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
@@ -21,7 +22,11 @@ class UserController extends Controller {
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('name', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('username', 'LIKE', '%' . $search . '%')
+                    ->orWhere('email', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 
@@ -55,7 +60,7 @@ class UserController extends Controller {
     public function store(UserRequest $request): RedirectResponse {
         Gate::authorize('create', User::class);
         $data = User::create($request->validated());
-        $role = Role::find($request->roles);
+        $role = Role::findOrFail($request->roles);
         $data->syncRoles($role->name);
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return back();
@@ -106,8 +111,16 @@ class UserController extends Controller {
 
     public function destroy($id): RedirectResponse
     {
-        $data = User::find($id);
+        $data = User::findOrFail($id);
         Gate::authorize('delete', $data);
+        if (Auth::id() === $data->id) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Akun yang sedang digunakan tidak dapat dihapus.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         $data->delete();
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();

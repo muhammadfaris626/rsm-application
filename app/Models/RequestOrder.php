@@ -20,8 +20,9 @@ class RequestOrder extends Model
         static::updated(function ($model) {
             // Hapus cache notifikasi saat ada perubahan status
             $user = Auth::user();
-            if ($user) {
-                Cache::forget("notification_count_{$user->id}_{$user->roles[0]['name']}");
+            $roleName = $user?->roles->first()?->name;
+            if ($user && $roleName) {
+                Cache::forget("notification_count_{$user->id}_{$roleName}");
             }
         });
     }

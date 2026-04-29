@@ -3,6 +3,7 @@
     import { Head, Link, useForm } from '@inertiajs/vue3';
     import { ref, onMounted, computed } from 'vue';
     import InputLabel from "@/Components/InputLabel.vue";
+    import InputError from '@/Components/InputError.vue';
     import TextInput from "@/Components/TextInput.vue";
     import VueMultiselect from "vue-multiselect";
     import axios from "axios";
@@ -48,10 +49,22 @@
         polygonCoordinates.value = [];
     };
 
-    const submit = () => {
-        form.branch_id = form.branch_id.id;
+    const submit = async () => {
+        if (!form.branch_id?.id) {
+            form.setError('branch_id', 'Kolom cabang wajib diisi.');
+            return;
+        }
+
+        if (polygonCoordinates.value.length < 3) {
+            form.setError('coordinates', 'Minimal 3 titik lokasi wajib dipilih.');
+            return;
+        }
+
         form.coordinates = [polygonCoordinates.value];
-        axios.post('/api/locations', form.data(), {
+        await axios.post('/api/locations', {
+            ...form.data(),
+            branch_id: form.branch_id.id,
+        }, {
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -71,7 +84,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="mr-1 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                                 </svg>
-                                Produk
+                                Database
                             </a>
                         </li>
                         <li>
@@ -94,7 +107,7 @@
                 </nav>
             </div>
             <div class="pt-2">
-                <h1 class="text-xl font-semibold text-blue-600">TAMBAH PERMINTAAN STOK</h1>
+                <h1 class="text-xl font-semibold text-blue-600">TAMBAH LOKASI</h1>
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-3 gap-2 mt-2 bg-white p-4 rounded-xl">
                         <div>
@@ -107,9 +120,11 @@
                                 label="branch_name"
                                 track-by="id"
                             />
+                            <InputError class="mt-2" :message="form.errors.branch_id" />
                         </div>
                         <div class="col-span-2">
                             <InputLabel for="coordinates" value="Lokasi" />
+                            <InputError class="mt-2" :message="form.errors.coordinates" />
                             <div style="height:600px">
                                 <l-map ref="map" v-model:zoom="zoom" :center="center" @click="addPoint">
                                     <l-tile-layer

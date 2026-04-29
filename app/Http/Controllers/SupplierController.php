@@ -18,16 +18,20 @@ class SupplierController extends Controller
 {
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('name', 'LIKE', '%' . $search . '%')
-                ->orWhere('phone', 'LIKE', '%' . $search . '%')
-                ->orWhere('address', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                    ->orWhere('address', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Supplier::class);
-        $searchQuery = Supplier::query()->latest();
+        $searchQuery = Supplier::query()
+            ->with('updateSupplierHistory.user')
+            ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = SupplierResource::collection($searchQuery->paginate(12));
         return Inertia::render('Database/Suppliers/IndexSupplier', [
@@ -96,6 +100,14 @@ class SupplierController extends Controller
     public function destroy(Supplier $supplier): RedirectResponse
     {
         Gate::authorize('delete', $supplier);
+        if ($supplier->inventoryPurchase()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Supplier ini masih digunakan pada pembelian inventaris.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateSupplierHistory::where('supplier_id', $supplier->id)->delete();
         $supplier->delete();
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);

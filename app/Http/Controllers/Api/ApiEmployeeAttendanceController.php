@@ -11,8 +11,10 @@ class ApiEmployeeAttendanceController extends Controller {
 
     private function applySearch($query, $search) {
         if (!empty($search)) {
-            $query->where('employee_number', 'LIKE', "%{$search}%")
-                ->orWhere('name', 'LIKE', "%{$search}%");
+            $query->where(function($query) use($search) {
+                $query->where('employee_number', 'LIKE', "%{$search}%")
+                    ->orWhere('name', 'LIKE', "%{$search}%");
+            });
         }
     }
 

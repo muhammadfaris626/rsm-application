@@ -21,6 +21,14 @@ class MutationController extends Controller
 {
     use OptimizedQueries;
 
+    private function fieldIdFromRequest($value): ?int {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        return $value;
+    }
+
     public function index() {
         Gate::authorize('viewAny', Mutation::class);
         return Inertia::render('Employees/Mutations/IndexMutation');
@@ -41,21 +49,36 @@ class MutationController extends Controller
 
     public function store(MutationRequest $request): RedirectResponse {
         Gate::authorize('create', Mutation::class);
+        $employee = Employee::select('id', 'employee_number', 'branch_id')
+            ->where('id', $this->fieldIdFromRequest($request->employee_id))
+            ->where('status', 'Aktif')
+            ->first();
+        $toBranchId = $this->fieldIdFromRequest($request->to_branch_id);
+
+        if (!$employee) {
+            Session::flash('toast', ['message' => 'Karyawan aktif tidak ditemukan.', 'type' => 'error']);
+            return back();
+        }
+
+        if ((int) $employee->branch_id === (int) $toBranchId) {
+            Session::flash('toast', ['message' => 'Cabang tujuan harus berbeda dari cabang asal.', 'type' => 'error']);
+            return back();
+        }
         
         Mutation::create([
-            'employee_id' => $request->employee_id['id'],
-            'from_branch_id' => $request->from_branch_id[0]['id'],
-            'to_branch_id' => $request->to_branch_id['id'],
+            'employee_id' => $employee->id,
+            'from_branch_id' => $employee->branch_id,
+            'to_branch_id' => $toBranchId,
             'transfer_date' => $request->transfer_date,
             'reason' => $request->reason
         ]);
         
         // Use single update query
-        Employee::where('id', $request->employee_id['id'])
-            ->update(['branch_id' => $request->to_branch_id['id']]);
+        Employee::where('id', $employee->id)
+            ->update(['branch_id' => $toBranchId]);
         
         // Clear employee cache
-        $this->clearRelatedCaches(['active_employees']);
+        $this->clearRelatedCaches(['active_employees', "employee_{$employee->employee_number}"]);
         
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return to_route('mutations.index');
@@ -82,11 +105,13 @@ class MutationController extends Controller
         // Use single update query
         Employee::where('id', $mutation->employee_id)
             ->update(['branch_id' => $mutation->from_branch_id]);
+
+        $employee = Employee::select('employee_number')->find($mutation->employee_id);
         
         $mutation->delete();
         
         // Clear employee cache
-        $this->clearRelatedCaches(['active_employees']);
+        $this->clearRelatedCaches(array_filter(['active_employees', $employee ? "employee_{$employee->employee_number}" : null]));
         
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();

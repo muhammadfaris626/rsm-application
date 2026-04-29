@@ -15,6 +15,10 @@
     import Textarea from '@/Components/Textarea.vue';
     import { usePermission } from '@/Composables/permissions';
     defineProps(["fetchData", 'expenditures', 'branches']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
+    const feeName = (value) => firstItem(value)?.type_of_fee ?? '-';
+    const userName = (value) => value?.name ?? '-';
     const form = useForm({
         id: "",
         branch_id: "",
@@ -86,9 +90,9 @@
     const modalUbahData = (data) => {
         showModalUpdate.value = true;
         form.id = data.id;
-        form.branch_id = data.branch_id;
+        form.branch_id = firstItem(data.branch_id);
         form.date = data.date;
-        form.expenditure_id = data.expenditure_id;
+        form.expenditure_id = firstItem(data.expenditure_id);
         form.total_cost = data.total_cost;
         form.description = data.description;
     }
@@ -110,10 +114,6 @@
 
     }
     const ubahData = () => {
-        const branchId = Array.isArray(form.branch_id) ? form.branch_id[0]?.id  : form.branch_id?.id;
-        form.branch_id = branchId;
-        const expendiruteId = Array.isArray(form.expenditure_id) ? form.expenditure_id[0]?.id : form.expenditure_id?.id;
-        form.expenditure_id = expendiruteId;
         form.put(route('operationalBranches.update', form.id), {
             onSuccess: () => {
                 form.reset();
@@ -303,15 +303,15 @@
                     <template #default>
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-teal-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'" class="font-semibold text-gray-600">{{ index+1 }}</TableDataCell>
-                            <TableDataCell :status="'record'" class="font-semibold text-gray-900">{{ data.branch_id[0]['branch_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="font-semibold text-gray-900">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'record'" class="text-gray-600">{{ formatTanggal(data.date) }}</TableDataCell>
-                            <TableDataCell :status="'record'" class="text-gray-700">{{ data.expenditure_id[0]['type_of_fee'] }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-700">{{ feeName(data.expenditure_id) }}</TableDataCell>
                             <TableDataCell :status="'record'">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-teal-100 text-teal-800">
                                     {{ formatRupiah(data.total_cost) }}
                                 </span>
                             </TableDataCell>
-                            <TableDataCell :status="'record'" class="text-gray-600">{{ data.user_id['name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-600">{{ userName(data.user_id) }}</TableDataCell>
                             <TableDataCell :status="'action'">
                                 <div class="flex items-center gap-2">
                                     <!-- Lihat Data  -->
@@ -390,7 +390,7 @@
                                                 CABANG
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.branch_id[0]['branch_name'] }}
+                                                {{ branchName(form.branch_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -406,7 +406,7 @@
                                                 JENIS BIAYA
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.expenditure_id[0]['type_of_fee'] }}
+                                                {{ feeName(form.expenditure_id) }}
                                             </td>
                                         </tr>
 
@@ -431,7 +431,7 @@
                                                 DIBUAT OLEH
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.user_id['name'] }}
+                                                {{ userName(form.user_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -439,7 +439,7 @@
                                                 DIUBAH OLEH
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.last_update.user.name }}
+                                                {{ form.last_update?.user?.name || 'N/A' }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

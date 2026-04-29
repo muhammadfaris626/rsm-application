@@ -18,7 +18,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-    app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
         app()['cache']->forget('spatie.permission.cache');
 
         // Define entities and actions
@@ -34,73 +34,26 @@ class RolesAndPermissionsSeeder extends Seeder
             // Database
             'branch', 'employee', 'product-category', 'product', 'expenditure', 'position', 'supplier', 'location',
             // Pengaturan
-            'user', 'role', 'permission',
-            // 'approval-type',
+            'user', 'role', 'permission', 'approval-type',
         ];
         $actions = ['menu', 'create', 'read', 'update', 'delete'];
         // Create permissions and store them in an associative array
         $permissions = [];
         foreach ($entities as $entity) {
             foreach ($actions as $action) {
-                $permissions["{$entity}: {$action}"] = Permission::create(['name' => "{$entity}: {$action}"]);
+                $permissionName = "{$entity}: {$action}";
+                $permissions[$permissionName] = Permission::firstOrCreate([
+                    'name' => $permissionName,
+                    'guard_name' => 'web',
+                ]);
             }
         }
+        $allPermissions = array_values($permissions);
+
         // Define roles and their permissions
         $roles = [
-            'root' => [
-                $permissions['branch-product: menu'], $permissions['branch-product: create'], $permissions['branch-product: read'], $permissions['branch-product: update'], $permissions['branch-product: delete'],
-                $permissions['center-stock: menu'], $permissions['center-stock: create'], $permissions['center-stock: read'], $permissions['center-stock: update'], $permissions['center-stock: delete'],
-                $permissions['inventory-purchase: menu'], $permissions['inventory-purchase: create'], $permissions['inventory-purchase: read'], $permissions['inventory-purchase: update'], $permissions['inventory-purchase: delete'],
-                $permissions['request-order: menu'], $permissions['request-order: create'], $permissions['request-order: read'], $permissions['request-order: update'], $permissions['request-order: delete'],
-                $permissions['request-return: menu'], $permissions['request-return: read'], $permissions['request-return: update'], $permissions['request-return: delete'],
-                $permissions['sale: menu'], $permissions['sale: read'], $permissions['sale: update'], $permissions['sale: delete'],
-                $permissions['operational-center: menu'], $permissions['operational-center: create'], $permissions['operational-center: read'], $permissions['operational-center: update'], $permissions['operational-center: delete'],
-                $permissions['operational-branch: menu'], $permissions['operational-branch: read'], $permissions['operational-branch: update'], $permissions['operational-branch: delete'],
-                $permissions['report: menu'], $permissions['report: create'], $permissions['report: read'], $permissions['report: update'], $permissions['report: delete'],
-                $permissions['management-structure: menu'], $permissions['management-structure: create'], $permissions['management-structure: read'], $permissions['management-structure: update'], $permissions['management-structure: delete'],
-                $permissions['branch: menu'], $permissions['branch: create'], $permissions['branch: read'], $permissions['branch: update'], $permissions['branch: delete'],
-                $permissions['employee: menu'], $permissions['employee: create'], $permissions['employee: read'], $permissions['employee: update'], $permissions['employee: delete'],
-                $permissions['product-category: menu'], $permissions['product-category: create'], $permissions['product-category: read'], $permissions['product-category: update'], $permissions['product-category: delete'],
-                $permissions['product: menu'], $permissions['product: create'], $permissions['product: read'], $permissions['product: update'], $permissions['product: delete'],
-                $permissions['expenditure: menu'], $permissions['expenditure: create'], $permissions['expenditure: read'], $permissions['expenditure: update'], $permissions['expenditure: delete'],
-                $permissions['position: menu'], $permissions['position: create'], $permissions['position: read'], $permissions['position: update'], $permissions['position: delete'],
-                $permissions['supplier: menu'], $permissions['supplier: create'], $permissions['supplier: read'], $permissions['supplier: update'], $permissions['supplier: delete'],
-                $permissions['location: menu'], $permissions['location: create'], $permissions['location: read'], $permissions['location: update'], $permissions['location: delete'],
-                $permissions['user: menu'], $permissions['user: create'], $permissions['user: read'], $permissions['user: update'], $permissions['user: delete'],
-                $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
-                $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],
-                $permissions['performance: menu'], $permissions['performance: create'], $permissions['performance: read'], $permissions['performance: update'], $permissions['performance: delete'],
-                $permissions['attendance: menu'], $permissions['attendance: create'], $permissions['attendance: read'], $permissions['attendance: update'], $permissions['attendance: delete'],
-                $permissions['mutation: menu'], $permissions['mutation: create'], $permissions['mutation: read'], $permissions['mutation: update'], $permissions['mutation: delete'],
-                $permissions['termination: menu'], $permissions['termination: create'], $permissions['termination: read'], $permissions['termination: update'], $permissions['termination: delete'],
-            ], // Root has all permissions
-            'admin-pusat' => [
-                $permissions['branch-product: menu'], $permissions['branch-product: create'], $permissions['branch-product: read'], $permissions['branch-product: update'], $permissions['branch-product: delete'],
-                $permissions['center-stock: menu'], $permissions['center-stock: create'], $permissions['center-stock: read'], $permissions['center-stock: update'], $permissions['center-stock: delete'],
-                $permissions['inventory-purchase: menu'], $permissions['inventory-purchase: create'], $permissions['inventory-purchase: read'], $permissions['inventory-purchase: update'], $permissions['inventory-purchase: delete'],
-                $permissions['request-order: menu'], $permissions['request-order: create'], $permissions['request-order: read'], $permissions['request-order: update'], $permissions['request-order: delete'],
-                $permissions['request-return: menu'], $permissions['request-return: read'], $permissions['request-return: update'], $permissions['request-return: delete'],
-                $permissions['sale: menu'], $permissions['sale: read'], $permissions['sale: update'], $permissions['sale: delete'],
-                $permissions['operational-center: menu'], $permissions['operational-center: create'], $permissions['operational-center: read'], $permissions['operational-center: update'], $permissions['operational-center: delete'],
-                $permissions['operational-branch: menu'], $permissions['operational-branch: read'], $permissions['operational-branch: update'], $permissions['operational-branch: delete'],
-                $permissions['report: menu'], $permissions['report: create'], $permissions['report: read'], $permissions['report: update'], $permissions['report: delete'],
-                $permissions['management-structure: menu'], $permissions['management-structure: create'], $permissions['management-structure: read'], $permissions['management-structure: update'], $permissions['management-structure: delete'],
-                $permissions['branch: menu'], $permissions['branch: create'], $permissions['branch: read'], $permissions['branch: update'], $permissions['branch: delete'],
-                $permissions['employee: menu'], $permissions['employee: create'], $permissions['employee: read'], $permissions['employee: update'], $permissions['employee: delete'],
-                $permissions['product-category: menu'], $permissions['product-category: create'], $permissions['product-category: read'], $permissions['product-category: update'], $permissions['product-category: delete'],
-                $permissions['product: menu'], $permissions['product: create'], $permissions['product: read'], $permissions['product: update'], $permissions['product: delete'],
-                $permissions['expenditure: menu'], $permissions['expenditure: create'], $permissions['expenditure: read'], $permissions['expenditure: update'], $permissions['expenditure: delete'],
-                $permissions['position: menu'], $permissions['position: create'], $permissions['position: read'], $permissions['position: update'], $permissions['position: delete'],
-                $permissions['supplier: menu'], $permissions['supplier: create'], $permissions['supplier: read'], $permissions['supplier: update'], $permissions['supplier: delete'],
-                $permissions['location: menu'], $permissions['location: create'], $permissions['location: read'], $permissions['location: update'], $permissions['location: delete'],
-                $permissions['user: menu'], $permissions['user: create'], $permissions['user: read'], $permissions['user: update'], $permissions['user: delete'],
-                $permissions['role: menu'], $permissions['role: create'], $permissions['role: read'], $permissions['role: update'], $permissions['role: delete'],
-                $permissions['permission: menu'], $permissions['permission: create'], $permissions['permission: read'], $permissions['permission: update'], $permissions['permission: delete'],
-                $permissions['performance: menu'], $permissions['performance: create'], $permissions['performance: read'], $permissions['performance: update'], $permissions['performance: delete'],
-                $permissions['attendance: menu'], $permissions['attendance: create'], $permissions['attendance: read'], $permissions['attendance: update'], $permissions['attendance: delete'],
-                $permissions['mutation: menu'], $permissions['mutation: create'], $permissions['mutation: read'], $permissions['mutation: update'], $permissions['mutation: delete'],
-                $permissions['termination: menu'], $permissions['termination: create'], $permissions['termination: read'], $permissions['termination: update'], $permissions['termination: delete'],
-            ],
+            'root' => $allPermissions, // Root has all permissions
+            'admin-pusat' => $allPermissions,
             'karyawan' => [],
             'admin-branch' => [
                 $permissions['request-order: menu'], $permissions['request-order: create'], $permissions['request-order: read'], $permissions['request-order: update'],
@@ -123,7 +76,10 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
         // Create roles and assign permissions
         foreach ($roles as $roleName => $rolePermissions) {
-            $role = Role::create(['name' => $roleName]);
+            $role = Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
             $role->syncPermissions($rolePermissions);
         }
         // Define users and their roles
@@ -167,14 +123,18 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create users and assign roles
         foreach ($users as $userData) {
-            $user = User::create([
-                'name'              => $userData['name'],
-                'username'          => $userData['username'],
-                'email'             => $userData['email'],
-                'email_verified_at' => now(),
-                'password'          => Hash::make($userData['password']),
-                'remember_token'    => Str::random(10),
-            ])->assignRole($userData['role']);
+            $user = User::firstOrCreate(
+                ['username' => $userData['username']],
+                [
+                    'name'              => $userData['name'],
+                    'email'             => $userData['email'],
+                    'email_verified_at' => now(),
+                    'password'          => Hash::make($userData['password']),
+                    'remember_token'    => Str::random(10),
+                ]
+            );
+
+            $user->syncRoles([$userData['role']]);
             $user->createToken($userData['name']);
         }
     }

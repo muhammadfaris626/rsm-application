@@ -11,16 +11,18 @@ class ApiMutationController extends Controller
 {
     private function applySearch($query, $search) {
         if (!empty($search)) {
-            $query->whereHas('employee', function($q) use($search) {
-                $q->where('employee_number', 'LIKE', "%{$search}%")
-                    ->orWhere('name', 'LIKE', "%{$search}%");
-            })->orWhereHas('fromBranch', function($q) use($search) {
-                $q->where('branch_name', 'LIKE', "%{$search}%");
-            })->orWhereHas('toBranch', function($q) use($search) {
-                $q->where('branch_name', 'LIKE', "%{$search}%");
-            })
-            ->orWhere('transfer_date', 'LIKE', "%{$search}%")
-            ->orWhere('status', 'LIKE', "%{$search}%");
+            $query->where(function($query) use($search) {
+                $query->whereHas('employee', function($q) use($search) {
+                    $q->where('employee_number', 'LIKE', "%{$search}%")
+                        ->orWhere('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('fromBranch', function($q) use($search) {
+                    $q->where('branch_name', 'LIKE', "%{$search}%");
+                })->orWhereHas('toBranch', function($q) use($search) {
+                    $q->where('branch_name', 'LIKE', "%{$search}%");
+                })
+                ->orWhere('transfer_date', 'LIKE', "%{$search}%")
+                ->orWhere('status', 'LIKE', "%{$search}%");
+            });
         }
     }
 

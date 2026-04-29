@@ -32,12 +32,44 @@ class ReportBranchController extends Controller
 {
     use OptimizedQueries;
 
+    private function emptyYearlySales(): array {
+        return [
+            'Jan' => 0, 'Feb' => 0, 'Mar' => 0, 'Apr' => 0,
+            'Mei' => 0, 'Jun' => 0, 'Jul' => 0, 'Aug' => 0,
+            'Sep' => 0, 'Okt' => 0, 'Nov' => 0, 'Des' => 0
+        ];
+    }
+
+    private function selectedBranchId($requestedBranchId = null): ?int {
+        $user = Auth::user();
+
+        if ($user->hasRole(['root', 'admin-pusat'])) {
+            if ($requestedBranchId && Branch::where('id', $requestedBranchId)->exists()) {
+                return (int) $requestedBranchId;
+            }
+
+            return Branch::where('status', 'Aktif')->value('id');
+        }
+
+        return $this->getCachedEmployee($user->username, true)?->branch_id;
+    }
+
+    private function branchesForUser(?int $branchId) {
+        $user = Auth::user();
+
+        if ($user->hasRole(['root', 'admin-pusat'])) {
+            return $this->getCachedActiveBranches();
+        }
+
+        return $branchId
+            ? Branch::select('id', 'branch_code', 'branch_name', 'status')->where('id', $branchId)->get()
+            : collect();
+    }
+
     public function index(Request $request): Response {
         Gate::authorize('viewAny', ReportBranch::class);
         
-        $user = Auth::user();
-        $employee = $this->getCachedEmployee($user->username, true);
-        $branchId = $employee->branch_id;
+        $branchId = $this->selectedBranchId($request->branch);
         
         $startDate = $request->start_date 
             ? Carbon::parse($request->start_date)->startOfDay() 
@@ -45,6 +77,19 @@ class ReportBranchController extends Controller
         $endDate = $request->end_date 
             ? Carbon::parse($request->end_date)->endOfDay() 
             : Carbon::today()->endOfDay();
+
+        if (!$branchId) {
+            return Inertia::render('Managements/Reports/IndexReportBranch', [
+                'cabangSendiri' => BranchResource::collection(collect()),
+                'sales' => collect(),
+                'expenditures' => collect(),
+                'orders' => collect(),
+                'returns' => collect(),
+                'selectBranch' => $request->selectBranch ?? 'CABANG',
+                'selectedBranch' => null,
+                'penjualanTahunan' => $this->emptyYearlySales(),
+            ]);
+        }
         
         // Optimized: Use withSum instead of map + sum
         $sales = Sale::query()
@@ -89,10 +134,7 @@ class ReportBranchController extends Controller
         // Optimized: Calculate yearly sales with DB aggregate for branch
         $penjualanTahunan = $this->getYearlySalesForBranch($branchId);
         
-        // Cache branch info
-        $cabangSendiri = Branch::select('id', 'branch_code', 'branch_name', 'status')
-            ->where('id', $branchId)
-            ->get();
+        $cabangSendiri = $this->branchesForUser($branchId);
         
         return Inertia::render('Managements/Reports/IndexReportBranch', [
             'cabangSendiri' => BranchResource::collection($cabangSendiri),
@@ -101,16 +143,16 @@ class ReportBranchController extends Controller
             'orders' => $orders,
             'returns' => $returns,
             'selectBranch' => $request->selectBranch ?? 'CABANG',
+            'selectedBranch' => $branchId,
             'penjualanTahunan' => $penjualanTahunan,
         ]);
     }
 
-    private function getYearlySalesForBranch(int $branchId): array {
-        $months = [
-            'Jan' => 0, 'Feb' => 0, 'Mar' => 0, 'Apr' => 0,
-            'Mei' => 0, 'Jun' => 0, 'Jul' => 0, 'Aug' => 0,
-            'Sep' => 0, 'Okt' => 0, 'Nov' => 0, 'Des' => 0
-        ];
+    private function getYearlySalesForBranch(?int $branchId): array {
+        $months = $this->emptyYearlySales();
+        if (!$branchId) {
+            return $months;
+        }
         
         $monthMap = [
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
@@ -137,9 +179,8 @@ class ReportBranchController extends Controller
     }
 
     public function cetak(Request $request): Response {
-        $user = Auth::user();
-        $employee = $this->getCachedEmployee($user->username, true);
-        $branch = Branch::find($employee->branch_id)?->branch_name;
+        $branchId = $this->selectedBranchId($request->branch_id);
+        $branch = Branch::find($branchId)?->branch_name;
         $tanggalMulai = $request->tanggal_mulai ?? now();
         $tanggalSelesai = $request->tanggal_selesai ?? now();
         $fetchData = $this->getData($request);
@@ -153,14 +194,18 @@ class ReportBranchController extends Controller
     }
 
     public function export(Request $request) {
-        $user = Auth::user();
-        $employee = $this->getCachedEmployee($user->username, true);
-        $branch = Branch::find($employee->branch_id)?->branch_name;
+        $branchId = $this->selectedBranchId($request->branch_id);
+        if (!$branchId) {
+            Session::flash('toast', ['message' => 'Cabang laporan tidak ditemukan.', 'type' => 'error']);
+            return back();
+        }
+
+        $branch = Branch::find($branchId)?->branch_name;
         $tanggalMulai = $request->tanggal_mulai ? Carbon::parse($request->tanggal_mulai)->format('d-m-Y') : now()->format('d-m-Y');
         $tanggalSelesai = $request->tanggal_selesai ? Carbon::parse($request->tanggal_selesai)->format('d-m-Y') : now()->format('d-m-Y');
         $data = [
             'pilihan' => $request->pilihan,
-            'branch' => $employee->branch_id,
+            'branch' => $branchId,
             'cabang' => $branch,
             'mulai' => $tanggalMulai,
             'selesai' => $tanggalSelesai
@@ -182,9 +227,10 @@ class ReportBranchController extends Controller
             Carbon::parse($request->tanggal_selesai)->endOfDay()
         ];
         
-        $user = Auth::user();
-        $employee = $this->getCachedEmployee($user->username, true);
-        $branchId = $employee->branch_id;
+        $branchId = $this->selectedBranchId($request->branch_id);
+        if (!$branchId) {
+            return [];
+        }
         
         return match ($request->pilihan) {
             "Omzet" => Sale::query()

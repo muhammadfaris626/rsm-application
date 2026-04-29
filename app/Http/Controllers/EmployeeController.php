@@ -26,16 +26,31 @@ class EmployeeController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('employee_number', 'LIKE', '%' . $search . '%')
-                ->orWhere('name', 'LIKE', '%' . $search . '%')
-                ->orWhere('place_of_birth', 'LIKE', '%' . $search . '%')
-                ->orWhere('date_of_birth', 'LIKE', '%' . $search . '%')
-                ->orWhere('phone', 'LIKE', '%' . $search . '%')
-                ->orWhere('status', 'LIKE', '%' . $search . '%')
-                ->orWhereHas('branch', function($query) use($search) {
-                    $query->where('branch_name', 'LIKE', '%' . $search . '%');
-                });
+            $query->where(function($query) use($search) {
+                $query->where('employee_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('place_of_birth', 'LIKE', '%' . $search . '%')
+                    ->orWhere('date_of_birth', 'LIKE', '%' . $search . '%')
+                    ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                    ->orWhere('status', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('branch', function($query) use($search) {
+                        $query->where('branch_name', 'LIKE', '%' . $search . '%');
+                    });
+            });
         });
+    }
+
+    private function fieldIdFromRequest($value): mixed
+    {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        if (is_object($value)) {
+            return $value->id ?? null;
+        }
+
+        return $value;
     }
 
     public function index(Request $request): Response {
@@ -44,7 +59,10 @@ class EmployeeController extends Controller
         // Optimized query with eager loading
         $searchQuery = Employee::query()
             ->select('id', 'employee_number', 'name', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status', 'created_at', 'updated_at')
-            ->with('branch:id,branch_name,branch_code')
+            ->with([
+                'branch:id,branch_name,branch_code',
+                'updateEmployeeHistory.user',
+            ])
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
@@ -73,7 +91,7 @@ class EmployeeController extends Controller
             'place_of_birth' => $request->place_of_birth,
             'date_of_birth' => $request->date_of_birth,
             'phone' => $request->phone,
-            'branch_id' => $request->branch_id['id'],
+            'branch_id' => $this->fieldIdFromRequest($request->branch_id),
             'status' => $request->status
         ]);
         UpdateEmployeeHistory::create([
@@ -116,7 +134,7 @@ class EmployeeController extends Controller
             'place_of_birth' => $request->place_of_birth,
             'date_of_birth' => $request->date_of_birth,
             'phone' => $request->phone,
-            'branch_id' => isset($request->branch_id['id']) ? $request->branch_id['id'] : $request->branch_id[0]['id'],
+            'branch_id' => $this->fieldIdFromRequest($request->branch_id),
             'status' => $request->status
         ]);
         UpdateEmployeeHistory::create([
@@ -149,9 +167,10 @@ class EmployeeController extends Controller
         // Cek data terkait untuk mencegah integrity error
         if (\App\Models\Attendance::where('employee_id', $employee->id)->exists() || 
             \App\Models\Mutation::where('employee_id', $employee->id)->exists() ||
-            \App\Models\Termination::where('employee_id', $employee->id)->exists()) {
+            \App\Models\Termination::where('employee_id', $employee->id)->exists() ||
+            \App\Models\ManagementStructure::where('employee_id', $employee->id)->exists()) {
             Session::flash('toast', [
-                'message' => 'Gagal menghapus! Karyawan ini memiliki data terkait (Absensi/Mutasi/PHK).',
+                'message' => 'Gagal menghapus! Karyawan ini memiliki data terkait (Absensi/Mutasi/PHK/Struktur Manajemen).',
                 'type' => 'error'
             ]);
             return back();

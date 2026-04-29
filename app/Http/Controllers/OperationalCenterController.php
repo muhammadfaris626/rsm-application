@@ -24,15 +24,25 @@ class OperationalCenterController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('total_cost', 'LIKE', '%' . $search . '%')
-                ->orWhere('description', 'LIKE', '%' . $search . '%')
-                ->orWhereHas('expenditure', function($query) use($search) {
-                    $query->where('type_of_fee', 'LIKE', '%' . $search . '%');
-                })
-                ->orWhereHas('user', function($query) use($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%');
-                });
+            $query->where(function($query) use($search) {
+                $query->where('total_cost', 'LIKE', '%' . $search . '%')
+                    ->orWhere('description', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('expenditure', function($query) use($search) {
+                        $query->where('type_of_fee', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('user', function($query) use($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%');
+                    });
+            });
         });
+    }
+
+    private function expenditureIdFromRequest($value): ?int {
+        if (is_array($value)) {
+            return $value['id'] ?? $value[0]['id'] ?? null;
+        }
+
+        return $value;
     }
 
     public function index(Request $request): Response {
@@ -43,7 +53,8 @@ class OperationalCenterController extends Controller
             ->select('id', 'date', 'expenditure_id', 'total_cost', 'description', 'user_id', 'created_at', 'updated_at')
             ->with([
                 'expenditure:id,type_of_fee',
-                'user:id,name'
+                'user:id,name',
+                'updateOperationalCenterHistory.user:id,name'
             ])
             ->latest();
         
@@ -69,7 +80,7 @@ class OperationalCenterController extends Controller
         Gate::authorize('create', OperationalCenter::class);
         $operationalCenter = OperationalCenter::create([
             'date' => $request->date,
-            'expenditure_id' => $request->expenditure_id['id'],
+            'expenditure_id' => $this->expenditureIdFromRequest($request->expenditure_id),
             'total_cost' => $request->total_cost,
             'description' => $request->description,
             'user_id' => Auth::user()->id,
@@ -98,7 +109,7 @@ class OperationalCenterController extends Controller
         Gate::authorize('update', $operationalCenter);
         $operationalCenter->update([
             'date' => $request->date,
-            'expenditure_id' => isset($request->expenditure_id['id']) ? $request->expenditure_id['id'] : $request->expenditure_id[0]['id'],
+            'expenditure_id' => $this->expenditureIdFromRequest($request->expenditure_id),
             'total_cost' => $request->total_cost,
             'description' => $request->description,
             'user_id' => Auth::user()->id,

@@ -56,6 +56,7 @@ trait OptimizedQueries
     {
         return Cache::remember('active_employees', 300, function() {
             return \App\Models\Employee::select('id', 'employee_number', 'name', 'branch_id')
+                ->with('branch:id,branch_code,branch_name,status')
                 ->where('status', 'Aktif')
                 ->get();
         });

@@ -9,6 +9,7 @@ use App\Http\Resources\SupplierResource;
 use App\Models\CenterStock;
 use App\Models\InventoryPurchase;
 use App\Models\ListInventoryPurchase;
+use App\Models\ListRequestOrder;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\UpdateInventoryPurchaseHistory;
@@ -28,11 +29,13 @@ class InventoryPurchaseController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('invoice_number', 'LIKE', '%' . $search . '%')
-                ->orWhere('date', 'LIKE', '%' . $search . '%')
-                ->orWhereHas('supplier', function($query) use($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%');
-                });
+            $query->where(function($query) use($search) {
+                $query->where('invoice_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('date', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('supplier', function($query) use($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%');
+                    });
+            });
         });
     }
 
@@ -44,7 +47,9 @@ class InventoryPurchaseController extends Controller
             ->select('id', 'invoice_number', 'date', 'supplier_id', 'created_at', 'updated_at')
             ->with([
                 'supplier:id,name',
-                'listInventoryPurchase:id,inventory_purchase_id,product_id,quantity,total_price'
+                'listInventoryPurchase:id,inventory_purchase_id,product_id,price,quantity,total_price',
+                'listInventoryPurchase.product:id,product_name',
+                'updateInventoryPurchaseHistory.user:id,name'
             ])
             ->latest();
         
@@ -182,9 +187,19 @@ class InventoryPurchaseController extends Controller
             ->whereNotIn('product_id', $existingProductIds)
             ->delete();
 
-        CenterStock::where('inventory_purchase_id', $inventoryPurchase->id)
+        $removedCenterStockIds = CenterStock::where('inventory_purchase_id', $inventoryPurchase->id)
             ->whereNotIn('product_id', $existingProductIds)
-            ->delete();
+            ->pluck('id');
+
+        if ($removedCenterStockIds->isNotEmpty() && ListRequestOrder::whereIn('center_stock_id', $removedCenterStockIds)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Barang tidak dapat dihapus dari pembelian karena sudah dipakai pada permintaan stok.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
+        CenterStock::whereIn('id', $removedCenterStockIds)->delete();
 
         foreach ($request->products as $product) {
             $productId = is_array($product['product_id']) ? $product['product_id']['id'] : $product['product_id'];
@@ -231,10 +246,18 @@ class InventoryPurchaseController extends Controller
 
     public function destroy(InventoryPurchase $inventoryPurchase): RedirectResponse {
         Gate::authorize('delete', $inventoryPurchase);
+        $centerStockIds = CenterStock::where('inventory_purchase_id', $inventoryPurchase->id)->pluck('id');
+        if ($centerStockIds->isNotEmpty() && ListRequestOrder::whereIn('center_stock_id', $centerStockIds)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Pembelian persediaan tidak dapat dihapus karena stoknya sudah dipakai pada permintaan stok.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
 
         // Delete related records
         ListInventoryPurchase::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
-        CenterStock::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
+        CenterStock::whereIn('id', $centerStockIds)->delete();
         UpdateInventoryPurchaseHistory::where('inventory_purchase_id', $inventoryPurchase->id)->delete();
         
         $inventoryPurchase->delete();

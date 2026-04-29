@@ -1,26 +1,71 @@
 <script setup>
+    import { inject, onMounted, onUnmounted, ref } from 'vue';
     import { usePermission } from '@/Composables/permissions';
     import SidebarLink from '@/Components/Custom/SidebarLink.vue'
     import NavigationLink from '@/Components/Custom/NavigationLink.vue';
     import { Link } from '@inertiajs/vue3';
     import { usePage } from "@inertiajs/vue3";
     const { hasPermission } = usePermission();
+    const route = inject('route');
+    const sidebar = ref(null);
+    const toggleButton = ref(null);
+    const isDesktop = ref(true);
+    const mobileSidebarOpen = ref(false);
+
     const isRouteActive = (routes) => {
-        return routes.some(route => window.route().current(route));
+        return routes.some(routeName => route?.().current(routeName));
     }
     const isRouteEnable = (routes) => {
         const routeValues = Object.values(usePage().props.auth.user.permissions);
         const routeEnableValues = Object.values(routes);
         return routeEnableValues.some(route => routeValues.includes(route));
     }
+
+    const closeMobileSidebar = () => {
+        if (sidebar.value?.contains(document.activeElement)) {
+            toggleButton.value?.focus();
+        }
+
+        mobileSidebarOpen.value = false;
+    }
+
+    const toggleMobileSidebar = () => {
+        mobileSidebarOpen.value = !mobileSidebarOpen.value;
+    }
+
+    const handleSidebarClick = (event) => {
+        if (!isDesktop.value && event.target instanceof Element && event.target.closest('a')) {
+            closeMobileSidebar();
+        }
+    }
+
+    let mediaQuery;
+    const syncDesktopState = (event) => {
+        isDesktop.value = event.matches;
+
+        if (event.matches) {
+            mobileSidebarOpen.value = false;
+        }
+    }
+
+    onMounted(() => {
+        mediaQuery = window.matchMedia('(min-width: 640px)');
+        syncDesktopState(mediaQuery);
+        mediaQuery.addEventListener('change', syncDesktopState);
+    });
+
+    onUnmounted(() => {
+        mediaQuery?.removeEventListener('change', syncDesktopState);
+    });
 </script>
 
 <template>
     <button 
+        ref="toggleButton"
         type="button" 
-        data-drawer-target="logo-sidebar" 
-        data-drawer-toggle="logo-sidebar" 
         aria-controls="logo-sidebar" 
+        :aria-expanded="mobileSidebarOpen.toString()"
+        @click="toggleMobileSidebar"
         class="fixed top-3 left-3 z-[60] inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
     >
         <span class="sr-only">Open sidebar</span>
@@ -28,8 +73,22 @@
         <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
         </svg>
     </button>
+    <div
+        v-if="mobileSidebarOpen"
+        class="fixed inset-0 z-30 bg-gray-900/50 sm:hidden"
+        @click="closeMobileSidebar"
+    ></div>
 
-    <aside id="logo-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+    <aside
+        id="logo-sidebar"
+        ref="sidebar"
+        class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform sm:translate-x-0"
+        :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+        :inert="!isDesktop && !mobileSidebarOpen"
+        aria-label="Sidebar"
+        @click.capture="handleSidebarClick"
+        @keydown.esc="closeMobileSidebar"
+    >
         <div class="h-full px-3 py-4 overflow-y-auto bg-blue-500 dark:bg-gray-800">
             <a href="https://flowbite.com/" class="flex justify-center items-center ps-2.5 mb-5">
                 <img :src="'/images/rsm-putih.svg'" class="h-16 me-3" />
@@ -192,7 +251,7 @@
                 </li>
                 <li
                     :class="{ hidden: !isRouteEnable([
-                        'performance: menu', 'attendance: menu', 'mutation: menu'
+                        'attendance: menu', 'performance: menu', 'mutation: menu', 'termination: menu'
                     ]) }"
                 >
                     <button type="button" class="flex items-center w-full p-2 text-base text-white transition duration-75 rounded-lg group hover:bg-white hover:text-blue-500" aria-controls="karyawan" data-collapse-toggle="karyawan">
@@ -206,15 +265,23 @@
                     </button>
                     <ul id="karyawan" class="py-2"
                         :class="{ hidden: !isRouteActive([
-                            'performances.index', 'attendances.index',
+                            'attendances.index', 'attendances.create', 'attendances.show',
+                            'performances.index',
                             'mutations.index', 'mutations.create', 'mutations.edit', 'mutations.show',
                             'terminations.index', 'terminations.create', 'terminations.edit', 'terminations.show'
                         ]) }"
                     >
                         <template v-if="hasPermission('attendance: menu')">
                             <li>
-                                <SidebarLink :href="route('attendances.index')" :active="isRouteActive(['attendances.index'])">
+                                <SidebarLink :href="route('attendances.index')" :active="isRouteActive(['attendances.index', 'attendances.create', 'attendances.show'])">
                                     Absensi
+                                </SidebarLink>
+                            </li>
+                        </template>
+                        <template v-if="hasPermission('performance: menu')">
+                            <li>
+                                <SidebarLink :href="route('performances.index')" :active="isRouteActive(['performances.index'])">
+                                    Kinerja
                                 </SidebarLink>
                             </li>
                         </template>
@@ -232,14 +299,6 @@
                                 </SidebarLink>
                             </li>
                         </template>
-
-                        <!-- <template v-if="hasPermission('performance: menu')">
-                            <li>
-                                <SidebarLink :href="'#'">
-                                    Kinerja
-                                </SidebarLink>
-                            </li>
-                        </template> -->
                     </ul>
                 </li>
                 <li
@@ -259,7 +318,7 @@
                     <ul id="database" class="py-2"
                         :class="{ hidden: !isRouteActive([
                                 'productCategories.index', 'products.index', 'employees.index', 'branches.index', 'expenditures.index', 'positions.index',
-                                'suppliers.index', 'locations.index'
+                                'suppliers.index', 'locations.index', 'locations.create'
                             ]) }"
                     >
                         <template v-if="hasPermission('product-category: menu')">
@@ -313,7 +372,7 @@
                         </template>
                         <template v-if="hasPermission('location: menu')">
                             <li>
-                                <SidebarLink :href="route('locations.index')" :active="isRouteActive(['locations.index'])">
+                                <SidebarLink :href="route('locations.index')" :active="isRouteActive(['locations.index', 'locations.create'])">
                                     Lokasi
                                 </SidebarLink>
                             </li>
@@ -326,7 +385,7 @@
                     ]) }"
                 >
                     <button type="button" class="flex items-center w-full p-2 text-base text-white transition duration-75 rounded-lg group hover:bg-white hover:text-blue-500" aria-controls="pengaturan" data-collapse-toggle="pengaturan">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="flex-shrink-0 w-5 h-5 transition duration-75 group-hover:text-bluee-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="flex-shrink-0 w-5 h-5 transition duration-75 group-hover:text-blue-500">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                         </svg>

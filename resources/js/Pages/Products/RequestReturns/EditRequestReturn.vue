@@ -21,26 +21,66 @@
         }
     });
 
+    const selectedRequestOrder = Array.isArray(props.requestReturn?.request_order_id)
+        ? props.requestReturn.request_order_id[0]
+        : props.requestReturn?.request_order_id;
+
     const form = useForm({
         id: props.requestReturn?.id,
         request_number: props.requestReturn?.request_number,
-        request_order_id: props.requestReturn?.request_order_id,
+        request_order_id: selectedRequestOrder ?? "",
         branch_id: props.requestReturn?.branch_id,
         date: props.requestReturn?.date,
     });
 
     const branchProducts = ref([]);
+    const selectedBranchId = computed(() => form.branch_id?.id ?? null);
+    const filteredRequestOrders = computed(() => props.requestOrders.filter((requestOrder) => {
+        return !selectedBranchId.value || requestOrder.branch_id?.[0]?.id === selectedBranchId.value;
+    }));
 
     watch(() => form.request_order_id, (newVal) => {
         if (newVal?.branch_product) {
-            branchProducts.value = newVal.branch_product.map(product => ({
-                ...product,
-                total_return: product.total_return ?? "",
-            }));
+            if (newVal.branch_id?.[0]) {
+                form.branch_id = newVal.branch_id[0];
+            }
+            branchProducts.value = newVal.branch_product.map(product => {
+                product.total_return = product.total_return ?? "";
+                return product;
+            });
         } else {
             branchProducts.value = [];
         }
     }, { deep: true, immediate: true });
+
+    watch(selectedBranchId, (branchId) => {
+        if (branchId && form.request_order_id?.branch_id?.[0]?.id !== branchId) {
+            form.request_order_id = "";
+        }
+    });
+
+    const submitRequest = () => {
+        if (!form.request_order_id?.branch_product?.length) {
+            alert('Nomor RO belum memiliki barang cabang.');
+            return;
+        }
+
+        for (const product of form.request_order_id.branch_product) {
+            if (product.total_return === "" || product.total_return === null || product.total_return === undefined) {
+                alert(`Masukkan jumlah return untuk ${product.product?.product_name ?? 'barang'}.`);
+                return;
+            }
+
+            if (Number(product.total_return) > Number(product.quantity)) {
+                alert(`Jumlah return untuk ${product.product?.product_name ?? 'barang'} tidak boleh melebihi sisa stok.`);
+                return;
+            }
+        }
+
+        form.put(route('requestReturns.update', form.id), {
+            preserveScroll: true,
+        });
+    }
 
 </script>
 
@@ -97,7 +137,7 @@
                             <InputLabel for="request_order_id" value="Nomor RO" />
                             <VueMultiselect
                                 v-model="form.request_order_id"
-                                :options="props.requestOrders"
+                                :options="filteredRequestOrders"
                                 :close-on-select="true"
                                 placeholder="Pilih"
                                 label="ro_number"
@@ -171,7 +211,7 @@
                                             type="text"
                                             class="block w-full bg-white text-center"
                                             placeholder="Jumlah Barang"
-                                            v-model="form.request_order_id.branch_product[index].total_return"
+                                            v-model="branchProducts[index].total_return"
                                         />
                                     </div>
                                 </div>

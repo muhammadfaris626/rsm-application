@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Inertia\Response;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Http\RedirectResponse;
@@ -20,14 +21,18 @@ class ProductCategoryController extends Controller
 {
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('product_category_code', 'LIKE', '%' . $search . '%')
-                ->orWhere('product_category_name', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('product_category_code', 'LIKE', '%' . $search . '%')
+                    ->orWhere('product_category_name', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 
     public function index(Request $request): Response {
         Gate::authorize('viewAny', ProductCategory::class);
-        $searchQuery = ProductCategory::query()->latest();
+        $searchQuery = ProductCategory::query()
+            ->with('updateProductCategoryHistory.user')
+            ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = ProductCategoryResource::collection($searchQuery->paginate(12));
         return Inertia::render('Database/ProductCategories/IndexProductCategory', [
@@ -53,6 +58,7 @@ class ProductCategoryController extends Controller
             'product_category_id' => $productCategory->id,
             'user_id' => Auth::user()->id
         ]);
+        Cache::forget('product_categories');
         Session::flash('toast', [
             'message' => 'Data berhasil ditambahkan.'
         ]);
@@ -75,6 +81,7 @@ class ProductCategoryController extends Controller
             'product_category_id' => $productCategory->id,
             'user_id' => Auth::user()->id
         ]);
+        Cache::forget('product_categories');
         Session::flash('toast', ['message' => 'Data berhasil diubah.']);
         return back();
     }
@@ -84,8 +91,17 @@ class ProductCategoryController extends Controller
      */
     public function destroy(ProductCategory $productCategory): RedirectResponse {
         Gate::authorize('delete', $productCategory);
+        if ($productCategory->product()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Kategori barang ini masih digunakan oleh data barang.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
         UpdateProductCategoryHistory::where('product_category_id', $productCategory->id)->delete();
         $productCategory->delete();
+        Cache::forget('product_categories');
         Session::flash('toast', ['message' => 'Data berhasil dihapus.']);
         return back();
     }
@@ -102,6 +118,7 @@ class ProductCategoryController extends Controller
 
         // Jalankan import dan kirim user_id
         Excel::import(new ProductCategoryImport($userId), $request->file('fileUpload'));
+        Cache::forget('product_categories');
         return back();
     }
 }

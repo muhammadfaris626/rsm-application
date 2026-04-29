@@ -71,10 +71,7 @@ class RoleController extends Controller {
     public function show(Role $role): Response {
         Gate::authorize('view', $role);
 
-        // Cache the permission list structure
-        $list = Cache::remember("role_permissions_{$role->id}", 300, function() use ($role) {
-            return $this->buildPermissionsList($role);
-        });
+        $list = $this->buildPermissionsList($role);
 
         return Inertia::render('Settings/Roles/ReadRole', [
             'fetchData' => $list,
@@ -86,7 +83,7 @@ class RoleController extends Controller {
         $allPermissions = [
             'USER', 'ROLE', 'PERMISSION', 'PRODUCT-CATEGORY', 'PRODUCT', 'EMPLOYEE', 'BRANCH', 'EXPENDITURE', 'POSITION', 'SUPPLIER', 'LOCATION', 'OPERATIONAL-CENTER', 'OPERATIONAL-BRANCH',
             'MANAGEMENT-STRUCTURE', 'INVENTORY-PURCHASE', 'REQUEST-ORDER', 'BRANCH-PRODUCT', 'CENTER-STOCK', 'SALE', 'REPORT', 'REPORT-BRANCH', 'PERFORMANCE', 'REQUEST-RETURN', 'ATTENDANCE',
-            'MUTATION', 'TERMINATION'
+            'MUTATION', 'TERMINATION', 'APPROVAL-TYPE'
         ];
 
         $categoryNames = [
@@ -115,7 +112,8 @@ class RoleController extends Controller {
             'PERFORMANCE'             => 'KINERJA',
             'ATTENDANCE'              => 'ABSENSI',
             'MUTATION'                => 'MUTASI',
-            'TERMINATION'             => 'PEMBERHENTIAN'
+            'TERMINATION'             => 'PEMBERHENTIAN',
+            'APPROVAL-TYPE'           => 'JENIS PERSETUJUAN',
         ];
 
         // Get all role permissions in one query
@@ -185,7 +183,7 @@ class RoleController extends Controller {
 
     public function update(RoleRequest $request, $id): RedirectResponse
     {
-        $data = Role::find($id);
+        $data = Role::findOrFail($id);
         Gate::authorize('update', $data);
         $data->update(['name' => $request->name]);
         
@@ -197,9 +195,17 @@ class RoleController extends Controller {
     }
 
     public function destroy($id): RedirectResponse {
-        $data = Role::find($id);
+        $data = Role::findOrFail($id);
         Gate::authorize('delete', $data);
-        Role::where('id', $id)->delete();
+        if ($data->users()->exists()) {
+            Session::flash('toast', [
+                'message' => 'Gagal menghapus! Peran ini masih digunakan oleh akun.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
+        $data->delete();
         
         // Clear role caches
         $this->clearRelatedCaches(['all_roles', "role_permissions_{$id}"]);
@@ -216,6 +222,13 @@ class RoleController extends Controller {
         
         $searchRole = Role::find($role);
         $searchPermission = Permission::find($permission);
+        if (!$searchRole || !$searchPermission) {
+            Session::flash('toast', [
+                'message' => 'Peran atau perizinan tidak ditemukan.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
         
         if (empty($checkRolePermission)) {
             $searchRole->givePermissionTo($searchPermission);

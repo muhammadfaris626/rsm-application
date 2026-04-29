@@ -342,7 +342,7 @@
                                                 DIUBAH OLEH
                                             </th>
                                             <td class="px-6 py-4">
-                                                {{ form.last_update.user.name }}
+                                                {{ form.last_update?.user?.name ?? '-' }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

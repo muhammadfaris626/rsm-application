@@ -21,12 +21,16 @@
         }
     });
 
+    const selectedBranch = Array.isArray(props.requestOrder?.branch_id)
+        ? props.requestOrder.branch_id[0]
+        : props.requestOrder?.branch_id;
+
     const form = useForm({
         id: props.requestOrder?.id,
         ro_number: props.requestOrder?.ro_number,
-        branch_id: props.requestOrder?.branch_id,
+        branch_id: selectedBranch ?? "",
         date: props.requestOrder?.date,
-        products: props.requestOrder?.listData.map(item => ({
+        products: (props.requestOrder?.listData ?? []).map(item => ({
             product_id: {
                 id: item.center_stock_id,
                 label: item.center_stock.product.product_name,
@@ -62,7 +66,8 @@
     watch(() => form.products.map(p => p.product_id), (newValues, oldValues) => {
         newValues.forEach((product_id, index) => {
             if (product_id) {
-                const selectedProduct = formattedProducts.value.find(p => p.id === product_id);
+                const productId = typeof product_id === 'object' ? product_id.id : product_id;
+                const selectedProduct = formattedProducts.value.find(p => p.id === productId);
                 form.products[index].stock = selectedProduct ? selectedProduct.stock : 0;
             } else {
                 form.products[index].stock = 0;

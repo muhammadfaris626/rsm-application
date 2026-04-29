@@ -21,13 +21,17 @@
         }
     });
 
+    const selectedSupplier = Array.isArray(props.inventoryPurchase?.supplier_id)
+        ? props.inventoryPurchase.supplier_id[0]
+        : props.inventoryPurchase?.supplier_id;
+
     const form = useForm({
         id: props.inventoryPurchase?.id,
         invoice_number: props.inventoryPurchase?.invoice_number,
         date: props.inventoryPurchase?.date,
-        supplier_id: props.inventoryPurchase?.supplier_id,
+        supplier_id: selectedSupplier ?? "",
         // products: props.inventoryPurchase?.listData,
-        products: props.inventoryPurchase?.listData.map(item => ({
+        products: (props.inventoryPurchase?.listData ?? []).map(item => ({
             product_id: item.product,
             price: item.price || "",
             quantity: item.quantity || "",

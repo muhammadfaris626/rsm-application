@@ -12,6 +12,9 @@
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
     defineProps(["fetchData", 'userBranch']);
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
+    const lastUpdateName = (value) => value?.user?.name ?? '-';
     const form = useForm({
         id: "",
         ro_number: "",
@@ -182,6 +185,7 @@
     const page = usePage();
     const userRoles = page.props.auth.user.roles;
     const userBranchId = page.props.userBranch;
+    const isCentralUser = computed(() => userRoles.includes("root") || userRoles.includes("admin-pusat"));
     const approvalOptions = computed(() => {
         const optionsMap = {
             "Sedang diverifikasi": ["Disetujui"],
@@ -195,11 +199,11 @@
     const canViewSelect = computed(() => {
         const rootAdminStatuses = ["Sedang diverifikasi", "Disetujui"];
         const branchStatuses = ["Pengiriman barang", "Tiba di lokasi", "Pengecekan barang"];
-        if (userRoles.includes("root") || userRoles.includes("admin-pusat")) {
+        if (isCentralUser.value) {
             return rootAdminStatuses.includes(form.status);
         }
         if (userRoles.includes("admin-branch")) {
-            return branchStatuses.includes(form.status) && userBranchId === form.branch_id[0].id;
+            return branchStatuses.includes(form.status) && userBranchId === firstItem(form.branch_id)?.id;
         }
         return false;
     });
@@ -276,7 +280,7 @@
                         <TableRow v-for="(data, index) in fetchData.data" :key="data.id" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors duration-150">
                             <TableDataCell :status="'number'" class="font-semibold text-gray-600">{{ index+1 }}</TableDataCell>
                             <TableDataCell :status="'record'" class="font-bold text-gray-900">{{ data.ro_number }}</TableDataCell>
-                            <TableDataCell :status="'record'" class="text-gray-700">{{ data.branch_id[0]['branch_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'" class="text-gray-700">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'record'" class="text-gray-600">{{ formatTanggal(data.date) }}</TableDataCell>
                             <TableDataCell :status="'record'">
                                 <button 
@@ -316,7 +320,7 @@
                                         </Link>
                                     </template>
                                     <!-- Hapus Data  -->
-                                    <template v-if="hasPermission('request-order: delete')">
+                                    <template v-if="hasPermission('request-order: delete') && data.status == 'Sedang diverifikasi'">
                                         <button 
                                             @click="modalHapusData(data)" 
                                             type="button" 
@@ -373,7 +377,7 @@
                                                 PERMINTAAN DARI
                                             </th>
                                             <td class="">
-                                                : {{ form.branch_id[0]['branch_name'] }}
+                                                : {{ branchName(form.branch_id) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -381,7 +385,7 @@
                                                 ATAS NAMA
                                             </th>
                                             <td class="">
-                                                : {{ form.last_update.user.name }}
+                                                : {{ lastUpdateName(form.last_update) }}
                                             </td>
                                         </tr>
                                         <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -412,7 +416,7 @@
                                         <th class="border border-gray-300">No</th>
                                         <th class="border border-gray-300">Nama Barang</th>
                                         <th class="border border-gray-300">Jumlah Barang</th>
-                                        <th v-if="userRoles[0] == 'root' || userRoles[0] == 'admin-pusat'" class="border border-gray-300">
+                                        <th v-if="isCentralUser" class="border border-gray-300">
                                             Stok
                                         </th>
                                         <th class="border border-gray-300">Permintaan Yang Disetujui</th>
@@ -423,9 +427,9 @@
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ index + 1 }}</td>
                                         <td class="border border-gray-300 py-1 px-2">{{ list.center_stock.product.product_name }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ list.quantity }}</td>
-                                        <td v-if="userRoles[0] == 'root' || userRoles[0] == 'admin-pusat'" class="border border-gray-300 py-1 px-2 text-center">{{ list.center_stock.stock }}</td>
+                                        <td v-if="isCentralUser" class="border border-gray-300 py-1 px-2 text-center">{{ list.center_stock.stock }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">
-                                            <div v-if="userRoles[0] == 'root' || userRoles[0] == 'admin-pusat'">
+                                            <div v-if="isCentralUser">
                                                 <template v-if="list.status !== 0">
                                                     {{ list.approved_quantity }}
                                                 </template>
@@ -567,7 +571,7 @@
                                             CABANG
                                         </th>
                                         <td class="px-6 py-4">
-                                            {{ form.branch_id[0]['branch_name'] }}
+                                            {{ branchName(form.branch_id) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -616,7 +620,7 @@
                                             DIUBAH OLEH
                                         </th>
                                         <td class="px-6 py-4">
-                                            {{ form.last_update.user.name }}
+                                            {{ lastUpdateName(form.last_update) }}
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

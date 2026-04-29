@@ -24,9 +24,11 @@ class BranchController extends Controller
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where('branch_code', 'LIKE', '%' . $search . '%')
-                ->orWhere('branch_name', 'LIKE', '%' . $search . '%')
-                ->orWhere('branch_address', 'LIKE', '%' . $search . '%');
+            $query->where(function($query) use($search) {
+                $query->where('branch_code', 'LIKE', '%' . $search . '%')
+                    ->orWhere('branch_name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('branch_address', 'LIKE', '%' . $search . '%');
+            });
         });
     }
 

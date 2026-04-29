@@ -5,14 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PermissionRequest;
 use App\Http\Resources\PermissionResource;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PermissionController extends Controller {
+
+    private function clearPermissionCaches(): void
+    {
+        Cache::forget('all_permissions');
+        Role::query()
+            ->select('id')
+            ->pluck('id')
+            ->each(fn($roleId) => Cache::forget("role_permissions_{$roleId}"));
+    }
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
@@ -38,6 +49,7 @@ class PermissionController extends Controller {
     public function store(PermissionRequest $request): RedirectResponse {
         Gate::authorize('create', Permission::class);
         $create = Permission::create(['name' => $request->name]);
+        $this->clearPermissionCaches();
         Session::flash('toast', [
             'message' => 'Data berhasil ditambahkan.'
         ]);
@@ -65,6 +77,7 @@ class PermissionController extends Controller {
         $permission->update([
             'name' => $request->name
         ]);
+        $this->clearPermissionCaches();
         Session::flash('toast', [
             'message' => 'Data berhasil diubah.'
         ]);
@@ -77,6 +90,7 @@ class PermissionController extends Controller {
     public function destroy(Permission $permission): RedirectResponse {
         Gate::authorize('delete', $permission);
         $permission->delete();
+        $this->clearPermissionCaches();
         Session::flash('toast', [
             'message' => 'Data berhasil dihapus.'
         ]);

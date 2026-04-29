@@ -53,11 +53,14 @@
         { deep: true }
     );
     
+    const selectedBranchId = computed(() => form.branch_id?.id ?? null);
     const products = computed(() => usePage().props.products ?? []);
     const formattedProducts = computed(() => {
-        return products.value.map(product => ({
+        return products.value
+            .filter(product => !selectedBranchId.value || product.branch_id?.[0]?.id === selectedBranchId.value)
+            .map(product => ({
             id: product.id,
-            label: `${product.product_id?.[0].product_name}`,
+            label: `${product.product_id?.[0]?.product_name ?? '-'}${product.branch_id?.[0]?.branch_name ? ' - ' + product.branch_id[0].branch_name : ''}`,
             stock: product.quantity || 0,
             serial_barcode: product.serial_barcode,
             tanggal: product.created_at
@@ -69,7 +72,14 @@
             ...employee,
             label: `${employee.employee_id[0]?.name}`
         })
-    ));
+    ).filter(employee => !selectedBranchId.value || employee.branch_id?.[0]?.id === selectedBranchId.value));
+
+    watch(selectedBranchId, () => {
+        form.management_structure_id = "";
+        form.products.forEach(product => {
+            product.branch_product_id = "";
+        });
+    });
     
     const totalPrice = computed(() => {
         return form.products.reduce((sum, product) => {

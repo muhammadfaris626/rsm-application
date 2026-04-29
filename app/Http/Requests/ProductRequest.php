@@ -29,7 +29,7 @@ class ProductRequest extends FormRequest
 
     public function messages(): array {
         return [
-            'prodct_category_id.required' => 'Kolom kategori produk wajib diisi.',
+            'product_category_id.required' => 'Kolom kategori produk wajib diisi.',
             'product_name.required' => 'Kolom nama produk wajib diisi.',
         ];
     }

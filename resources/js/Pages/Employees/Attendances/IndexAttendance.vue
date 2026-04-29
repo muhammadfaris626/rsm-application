@@ -1,7 +1,7 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { ref, onMounted, watch } from 'vue';
-    import { Head, Link, useForm } from '@inertiajs/vue3';
+    import { Head, Link } from '@inertiajs/vue3';
     import axios from "axios";
     import Modal from '@/Components/Modal.vue';
     import Table from '@/Components/Custom/Table.vue';
@@ -10,8 +10,9 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import ApiTablePagination from '@/Components/Custom/ApiTablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
-    import { Inertia } from '@inertiajs/inertia';
     const { hasPermission } = usePermission();
+    const firstItem = (value) => Array.isArray(value) ? value[0] : value;
+    const branchName = (value) => firstItem(value)?.branch_name ?? '-';
 
     const search = ref("");
     const fetchData = ref([]);
@@ -121,7 +122,7 @@
                             <TableDataCell :status="'number'">{{ index + 1 + (paginationMeta.per_page * (paginationMeta.current_page - 1)) }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.employee_number }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.name }}</TableDataCell>
-                            <TableDataCell :status="'record'">{{ data.branch_id[0]['branch_name'] }}</TableDataCell>
+                            <TableDataCell :status="'record'">{{ branchName(data.branch_id) }}</TableDataCell>
                             <TableDataCell :status="'action'">
                                 <template v-if="hasPermission('attendance: read')">
                                     <Link 

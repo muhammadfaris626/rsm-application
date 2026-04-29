@@ -29,9 +29,13 @@ class RequestOrderController extends Controller {
 
     protected function applySearch($query, $search) {
         return $query->when($search, function($query, $search) {
-            $query->where(function($query) use($search) {
-                $query->where('ro_number', 'LIKE', '%' . $search . '%')
-                    ->orWhere('date', 'LIKE', '%' . $search . '%');
+                $query->where(function($query) use($search) {
+                    $query->where('ro_number', 'LIKE', '%' . $search . '%')
+                    ->orWhere('date', 'LIKE', '%' . $search . '%')
+                    ->orWhere('status', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('branch', function($query) use($search) {
+                        $query->where('branch_name', 'LIKE', '%' . $search . '%');
+                    });
             });
         });
     }
@@ -69,6 +73,17 @@ class RequestOrderController extends Controller {
                     ->first();
             });
         }
+
+        $branches = $isCentralUser
+            ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                ->where('status', 'Aktif')
+                ->get()
+            : ($employee
+                ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                    ->where('status', 'Aktif')
+                    ->where('id', $employee->branch_id)
+                    ->get()
+                : collect());
         
         // Optimized query with eager loading
         $searchQuery = RequestOrder::query()
@@ -85,13 +100,23 @@ class RequestOrderController extends Controller {
                 fn($query) => $query->where('branch_id', $employee->branch_id))
             ->when(!$isCentralUser && !$employee,
                 fn($query) => $query->whereRaw('1 = 0'))
+            ->when($request->branch,
+                fn($query) => $query->where('branch_id', $request->branch))
+            ->when($request->start_date,
+                fn($query) => $query->whereDate('date', '>=', $request->start_date))
+            ->when($request->end_date,
+                fn($query) => $query->whereDate('date', '<=', $request->end_date))
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
         
         return Inertia::render('Products/RequestOrders/IndexRequestOrder', [
-            'fetchData' => RequestOrderResource::collection($searchQuery->paginate(12)),
+            'fetchData' => RequestOrderResource::collection($searchQuery->paginate(12)->withQueryString()),
             'search' => $request->search ?? '',
+            'branches' => BranchResource::collection($branches),
+            'selectedBranch' => $request->branch ?? '',
+            'selectedStartDate' => $request->start_date ?? '',
+            'selectedEndDate' => $request->end_date ?? '',
             'userBranch' => $employee?->branch_id ?? 0
         ]);
     }

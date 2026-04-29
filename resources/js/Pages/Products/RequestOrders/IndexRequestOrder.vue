@@ -11,7 +11,14 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
-    defineProps(["fetchData", 'userBranch']);
+    const props = defineProps([
+        "fetchData",
+        "userBranch",
+        "branches",
+        "selectedBranch",
+        "selectedStartDate",
+        "selectedEndDate"
+    ]);
     const firstItem = (value) => Array.isArray(value) ? value[0] : value;
     const branchName = (value) => firstItem(value)?.branch_name ?? '-';
     const lastUpdateName = (value) => value?.user?.name ?? '-';
@@ -30,11 +37,23 @@
     });
     const { hasPermission } = usePermission();
     let search = ref(usePage().props.search), pageNumber = ref(1);
+    const selectedBranch = ref(props.selectedBranch ?? "");
+    const selectedStartDate = ref(props.selectedStartDate ?? "");
+    const selectedEndDate = ref(props.selectedEndDate ?? "");
     let searchUrl = computed(() => {
         let url = new URL(route('requestOrders.index'));
         url.searchParams.append("page", pageNumber.value);
         if (search.value) {
             url.searchParams.append("search", search.value);
+        }
+        if (selectedBranch.value) {
+            url.searchParams.append("branch", selectedBranch.value);
+        }
+        if (selectedStartDate.value) {
+            url.searchParams.append("start_date", selectedStartDate.value);
+        }
+        if (selectedEndDate.value) {
+            url.searchParams.append("end_date", selectedEndDate.value);
         }
         return url;
     });
@@ -45,6 +64,16 @@
             replace: true
         });
     });
+    watch([search, selectedBranch, selectedStartDate, selectedEndDate], () => {
+        pageNumber.value = 1;
+    });
+    const resetFilters = () => {
+        search.value = "";
+        selectedBranch.value = "";
+        selectedStartDate.value = "";
+        selectedEndDate.value = "";
+        pageNumber.value = 1;
+    };
 
     const showModalCreate = ref(false);
     const showModalRead = ref(false);
@@ -232,8 +261,8 @@
 
             <!-- Search and Action Bar -->
             <div class="bg-white rounded-xl shadow-md p-4">
-                <div class="flex flex-col md:flex-row justify-between gap-4">
-                    <div class="w-full md:w-1/3">
+                <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors">
@@ -247,8 +276,34 @@
                                 placeholder="Cari nomor permintaan, cabang, atau status..."
                             >
                         </div>
+                        <select
+                            v-model="selectedBranch"
+                            class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2.5 transition-all duration-200"
+                        >
+                            <option value="">Semua Cabang</option>
+                            <option v-for="branch in props.branches" :key="branch.id" :value="branch.id">
+                                {{ branch.branch_name }}
+                            </option>
+                        </select>
+                        <input
+                            v-model="selectedStartDate"
+                            type="date"
+                            class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2.5 transition-all duration-200"
+                        >
+                        <input
+                            v-model="selectedEndDate"
+                            type="date"
+                            class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2.5 transition-all duration-200"
+                        >
                     </div>
-                    <div>
+                    <div class="flex flex-col sm:flex-row gap-2 lg:justify-end">
+                        <button
+                            @click="resetFilters"
+                            type="button"
+                            class="px-4 py-2.5 text-sm font-semibold text-gray-700 inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg transition-all duration-200"
+                        >
+                            Reset
+                        </button>
                         <template v-if="hasPermission('request-order: create')">
                             <Link 
                                 :href="route('requestOrders.create')" 

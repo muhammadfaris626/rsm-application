@@ -18,6 +18,10 @@
         },
         products: {
             type: Array
+        },
+        branchProductStocks: {
+            type: Array,
+            default: () => []
         }
     });
 
@@ -33,11 +37,16 @@
         products: (props.requestOrder?.listData ?? []).map(item => ({
             product_id: {
                 id: item.center_stock_id,
+                product_id: item.center_stock.product_id,
                 label: item.center_stock.product.product_name,
                 stock: item.center_stock.stock,
                 serial_barcode: item.center_stock.serial_barcode
             },
             quantity: item.quantity || "",
+            initial_stock: item.initial_stock || 0,
+            used_quantity: item.used_quantity || 0,
+            damaged_quantity: item.damaged_quantity || 0,
+            final_stock: item.final_stock || 0,
             stock: item.center_stock.stock
         }))
     });
@@ -46,6 +55,10 @@
         form.products.push({
             product_id: "",
             quantity: "",
+            initial_stock: 0,
+            used_quantity: 0,
+            damaged_quantity: 0,
+            final_stock: 0,
         });
     }
 
@@ -58,22 +71,60 @@
     const formattedProducts = computed(() => {
         return products.value.map(product => ({
             id: product.id,
+            product_id: product.product_id?.[0]?.id,
             label: product.product_id?.[0]?.product_name ?? '-',
             stock: product.stock || 0,
             serial_barcode: product.serial_barcode
         }));
     }, { deep: true });
-    watch(() => form.products.map(p => p.product_id), (newValues, oldValues) => {
-        newValues.forEach((product_id, index) => {
-            if (product_id) {
-                const productId = typeof product_id === 'object' ? product_id.id : product_id;
-                const selectedProduct = formattedProducts.value.find(p => p.id === productId);
-                form.products[index].stock = selectedProduct ? selectedProduct.stock : 0;
-            } else {
-                form.products[index].stock = 0;
-            }
+    const selectedBranchId = computed(() => form.branch_id?.id ?? form.branch_id?.[0]?.id ?? null);
+    let previousBranchId = selectedBranchId.value;
+    const toNumber = (value) => {
+        const number = Number(value || 0);
+        return Number.isFinite(number) ? number : 0;
+    };
+    const branchStockMap = computed(() => {
+        return new Map((props.branchProductStocks ?? []).map(item => [
+            `${item.branch_id}-${item.product_id}`,
+            toNumber(item.stock)
+        ]));
+    });
+    const branchStockFor = (product) => {
+        const productId = product.product_id?.product_id;
+        if (!selectedBranchId.value || !productId) return 0;
+        return branchStockMap.value.get(`${selectedBranchId.value}-${productId}`) ?? 0;
+    };
+    const finalStockFor = (product) => {
+        return toNumber(product.initial_stock)
+            + toNumber(product.quantity)
+            - toNumber(product.used_quantity)
+            - toNumber(product.damaged_quantity);
+    };
+    const syncStockReport = () => {
+        form.products.forEach((product) => {
+            const selectedProduct = formattedProducts.value.find(p => p.id === product.product_id?.id);
+            product.stock = selectedProduct ? selectedProduct.stock : 0;
+            product.initial_stock = branchStockFor(product);
+            product.final_stock = finalStockFor(product);
         });
-    }, { deep: true });
+    };
+
+    watch(
+        () => [
+            selectedBranchId.value,
+            form.products.map(product => product.product_id?.id).join(','),
+            form.products.map(product => `${product.quantity}|${product.used_quantity}|${product.damaged_quantity}`).join(',')
+        ],
+        syncStockReport,
+        { deep: true }
+    );
+
+    watch(selectedBranchId, (branchId) => {
+        if (previousBranchId && previousBranchId !== branchId) {
+            form.products = [];
+        }
+        previousBranchId = branchId;
+    });
 
 </script>
 
@@ -170,6 +221,7 @@
                         </div>
 
                     </div>
+                    <template v-if="selectedBranchId">
                     <h1 class="text-xl font-semibold text-blue-600 my-2">UBAH BARANG</h1>
                     <div class="bg-white p-4 rounded-xl">
                         <div v-if="form.products.length > 0" class="relative flex flex-col rounded-lg bg-white shadow-sm border border-slate-200 mb-4">
@@ -177,9 +229,11 @@
                                 <div v-for="(product, index) in form.products" :key="index">
                                     <div class="text-slate-800 flex w-full items-center rounded-md p-2 pl-3 transition-all">
                                         <h1 class="mr-2 text-lg font-semibold">{{ index+1 }}.</h1>
-                                        <div class="grid grid-cols-5 gap-2 w-full">
-                                            <div class="col-span-2">
+                                        <div class="grid grid-cols-12 gap-2 w-full items-start">
+                                            <div class="col-span-12 md:col-span-3">
+                                                <InputLabel :for="'product_id_' + index" value="Barang" />
                                                 <VueMultiselect
+                                                    :id="'product_id_' + index"
                                                     class="bg-white"
                                                     v-model="product.product_id"
                                                     :options="formattedProducts"
@@ -187,23 +241,63 @@
                                                     placeholder="Pilih Barang"
                                                     label="label"
                                                     track-by="id"
-                                                    :id="'product_id_' + index"
                                                 />
                                                 <InputError class="mt-2" :message="form.errors['products.' + index + '.product_id']" />
                                             </div>
-                                            <div>
+                                            <div class="col-span-6 md:col-span-2">
+                                                <InputLabel :for="'initial_stock_' + index" value="Stok Awal" />
+                                                <TextInput
+                                                    :id="'initial_stock_' + index"
+                                                    type="text"
+                                                    class="block w-full bg-slate-100"
+                                                    v-model="product.initial_stock"
+                                                    disabled
+                                                />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-2">
+                                                <InputLabel :for="'quantity_' + index" value="Jumlah Permintaan" />
                                                 <TextInput
                                                     :id="'quantity_' + index"
                                                     type="text"
                                                     class="block w-full bg-white"
-                                                    placeholder="Jumlah Barang"
+                                                    placeholder="Jumlah"
                                                     v-model="product.quantity"
                                                 />
                                                 <InputError class="mt-2" :message="form.errors['products.' + index + '.quantity']" />
                                             </div>
-                                            <!-- <div v-if="product.product_id?.stock != null" class="flex items-center">
-                                                <p>Stok Tersedia : <b>{{ product.product_id.stock }}</b></p>
-                                            </div> -->
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'used_quantity_' + index" value="Terpakai" />
+                                                <TextInput
+                                                    :id="'used_quantity_' + index"
+                                                    type="text"
+                                                    class="block w-full bg-white"
+                                                    v-model="product.used_quantity"
+                                                />
+                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.used_quantity']" />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'damaged_quantity_' + index" value="Rusak" />
+                                                <TextInput
+                                                    :id="'damaged_quantity_' + index"
+                                                    type="text"
+                                                    class="block w-full bg-white"
+                                                    v-model="product.damaged_quantity"
+                                                />
+                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.damaged_quantity']" />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'final_stock_' + index" value="Stok Akhir" />
+                                                <TextInput
+                                                    :id="'final_stock_' + index"
+                                                    type="text"
+                                                    class="block w-full bg-slate-100"
+                                                    :model-value="finalStockFor(product)"
+                                                    disabled
+                                                />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-2 text-xs text-gray-500 pt-6">
+                                                Stok pusat: <span class="font-semibold">{{ product.product_id?.stock ?? 0 }}</span>
+                                            </div>
                                         </div>
                                         <div class="ml-2 grid place-items-center justify-self-end">
                                             <button @click="removeProduct(index)" class="rounded-md border border-transparent p-2.5 text-center text-sm transition-all bg-red-500 text-white hover:bg-red-600 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none" type="button">
@@ -216,7 +310,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex-flex-row-reverse space-x-4 space-x-reverse justify-center">
+                        <div v-if="selectedBranchId" class="flex-flex-row-reverse space-x-4 space-x-reverse justify-center">
                             <div class="text-center">
                                 <button @click="addProduct" type="button" class="px-5 py-2 text-sm font-medium text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-center">
                                     Tambah Barang
@@ -224,6 +318,7 @@
                             </div>
                         </div>
                     </div>
+                    </template>
                     <div class="mt-6">
                         <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">UBAH</button>
                         <Link :href="route('requestOrders.index')" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">KEMBALI</Link>

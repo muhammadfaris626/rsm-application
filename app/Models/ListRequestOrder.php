@@ -11,7 +11,18 @@ class ListRequestOrder extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['request_order_id', 'center_stock_id', 'quantity', 'approved_quantity', 'serial_barcode', 'status'];
+    protected $fillable = [
+        'request_order_id',
+        'center_stock_id',
+        'quantity',
+        'initial_stock',
+        'used_quantity',
+        'damaged_quantity',
+        'final_stock',
+        'approved_quantity',
+        'serial_barcode',
+        'status',
+    ];
 
     public function requestOrder(): BelongsTo {
         return $this->belongsTo(RequestOrder::class, 'request_order_id');

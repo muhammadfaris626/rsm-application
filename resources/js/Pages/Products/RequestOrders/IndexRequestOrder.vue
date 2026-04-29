@@ -345,7 +345,7 @@
             </div>
             <!-- Modal Approval -->
             <Modal :show="showModalApproval" @close="closeModalApproval">
-                <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                <div class="relative w-full max-w-7xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
                     <div class="flex items-center justify-center p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                         <h3 class="text-md font-semibold text-gray-900 dark:text-white text-center">
                             {{ form.ro_number }}
@@ -415,9 +415,13 @@
                                     <tr>
                                         <th class="border border-gray-300">No</th>
                                         <th class="border border-gray-300">Nama Barang</th>
+                                        <th class="border border-gray-300">Stok Awal</th>
                                         <th class="border border-gray-300">Jumlah Barang</th>
+                                        <th class="border border-gray-300">Terpakai</th>
+                                        <th class="border border-gray-300">Rusak</th>
+                                        <th class="border border-gray-300">Stok Akhir</th>
                                         <th v-if="isCentralUser" class="border border-gray-300">
-                                            Stok
+                                            Stok Pusat
                                         </th>
                                         <th class="border border-gray-300">Permintaan Yang Disetujui</th>
                                     </tr>
@@ -426,7 +430,11 @@
                                     <tr v-for="(list, index) in form.listData" :key="list.id">
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ index + 1 }}</td>
                                         <td class="border border-gray-300 py-1 px-2">{{ list.center_stock.product.product_name }}</td>
+                                        <td class="border border-gray-300 py-1 px-2 text-center">{{ list.initial_stock ?? 0 }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ list.quantity }}</td>
+                                        <td class="border border-gray-300 py-1 px-2 text-center">{{ list.used_quantity ?? 0 }}</td>
+                                        <td class="border border-gray-300 py-1 px-2 text-center">{{ list.damaged_quantity ?? 0 }}</td>
+                                        <td class="border border-gray-300 py-1 px-2 text-center">{{ list.final_stock ?? 0 }}</td>
                                         <td v-if="isCentralUser" class="border border-gray-300 py-1 px-2 text-center">{{ list.center_stock.stock }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">
                                             <div v-if="isCentralUser">
@@ -540,7 +548,7 @@
             </Modal>
             <!-- Modal Lihat Data  -->
             <Modal :show="showModalRead" @close="closeModalRead">
-                <div class="relative w-full max-w-5xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
+                <div class="relative w-full max-w-7xl max-h-full bg-white rounded-lg shadow dark:bg-gray-700">
                     <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
                         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
                             TAMPILKAN PERMINTAAN PESANAN
@@ -602,14 +610,22 @@
                                                     <tr>
                                                         <th class="border border-gray-300 px-2">No</th>
                                                         <th class="border border-gray-300 px-2">Nama Barang</th>
+                                                        <th class="border border-gray-300 px-2">Stok Awal</th>
                                                         <th class="border border-gray-300 px-2">Jumlah Barang</th>
+                                                        <th class="border border-gray-300 px-2">Terpakai</th>
+                                                        <th class="border border-gray-300 px-2">Rusak</th>
+                                                        <th class="border border-gray-300 px-2">Stok Akhir</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     <tr v-for="(list, index) in form.listData" :key="list.id">
                                                         <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
                                                         <td class="border border-gray-300 px-2">{{ list.center_stock.product.product_name }}</td>
+                                                        <td class="border border-gray-300 px-2 text-center">{{ list.initial_stock ?? 0 }}</td>
                                                         <td class="border border-gray-300 px-2 text-center">{{ list.quantity }}</td>
+                                                        <td class="border border-gray-300 px-2 text-center">{{ list.used_quantity ?? 0 }}</td>
+                                                        <td class="border border-gray-300 px-2 text-center">{{ list.damaged_quantity ?? 0 }}</td>
+                                                        <td class="border border-gray-300 px-2 text-center">{{ list.final_stock ?? 0 }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>

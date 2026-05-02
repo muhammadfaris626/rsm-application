@@ -11,7 +11,11 @@ class Employee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['employee_number', 'name', 'address', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status'];
+    protected $fillable = ['employee_number', 'user_id', 'name', 'address', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status'];
+
+    public function user(): BelongsTo {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function branch(): BelongsTo {
         return $this->belongsTo(Branch::class, 'branch_id');

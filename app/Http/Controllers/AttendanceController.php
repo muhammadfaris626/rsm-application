@@ -23,6 +23,28 @@ class AttendanceController extends Controller {
         return Inertia::render('Employees/Attendances/IndexAttendance');
     }
 
+    public function selfAttendance(): Response
+    {
+        $employee = Employee::select('id', 'employee_number', 'user_id', 'name', 'branch_id')
+            ->with('branch:id,branch_name')
+            ->where('user_id', Auth::id())
+            ->orWhere('employee_number', Auth::user()->username)
+            ->first();
+
+        $todayAttendance = $employee
+            ? Attendance::select('id', 'employee_id', 'work_date', 'check_in', 'check_out', 'check_in_photo', 'check_out_photo')
+                ->where('employee_id', $employee->id)
+                ->whereDate('work_date', now()->toDateString())
+                ->first()
+            : null;
+
+        return Inertia::render('Employees/Attendances/SelfAttendance', [
+            'employee' => $employee,
+            'todayAttendance' => $todayAttendance,
+            'serverTime' => now()->toDateTimeString(),
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */

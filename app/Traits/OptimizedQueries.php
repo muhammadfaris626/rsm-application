@@ -28,6 +28,27 @@ trait OptimizedQueries
     }
 
     /**
+     * Cache employee data berdasarkan user login, dengan fallback ke employee_number lama.
+     */
+    protected function getCachedEmployeeByUser($user, $branchIdOnly = false)
+    {
+        $cacheKey = "employee_user_{$user->id}";
+
+        return Cache::remember($cacheKey, 300, function() use ($user, $branchIdOnly) {
+            $query = \App\Models\Employee::query();
+
+            if ($branchIdOnly) {
+                $query->select('id', 'employee_number', 'user_id', 'branch_id');
+            }
+
+            return $query
+                ->where('user_id', $user->id)
+                ->orWhere('employee_number', $user->username)
+                ->first();
+        });
+    }
+
+    /**
      * Cache active branches
      */
     protected function getCachedActiveBranches($selectFields = ['id', 'branch_code', 'branch_name', 'status'])

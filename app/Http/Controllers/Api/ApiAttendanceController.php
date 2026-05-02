@@ -25,7 +25,7 @@ class ApiAttendanceController extends Controller
         }
         
         // Use cached employee
-        $employee = $this->getCachedEmployee($user->username, true);
+        $employee = $this->getCachedEmployeeByUser($user, true);
         
         if (!$employee) {
             return response()->json(['message' => 'Karyawan tidak ditemukan.']);

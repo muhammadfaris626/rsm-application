@@ -102,6 +102,14 @@
                         <span class="ms-3">Beranda</span>
                     </NavigationLink>
                 </li>
+                <li>
+                    <NavigationLink :href="route('attendances.self')" :active="isRouteActive(['attendances.self'])">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition duration-75 group-hover:text-blue-500">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V6.75A2.25 2.25 0 0 0 18.75 4.5H5.25A2.25 2.25 0 0 0 3 6.75v12A2.25 2.25 0 0 0 5.25 21Zm3-8.25 2.25 2.25 5.25-5.25" />
+                        </svg>
+                        <span class="ms-3">Absen Saya</span>
+                    </NavigationLink>
+                </li>
                 <li
                     :class="{ hidden: !isRouteEnable([
                         'branch-product: menu', 'inventory-purchase: menu', 'request-order: menu', 'sale: menu', 'center-stock: menu', 'request-return: menu'

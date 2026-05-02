@@ -4,7 +4,7 @@
   ],
   "node_modules/laravel-vite-plugin/inertia-helpers/index.js": [],
   "node_modules/leaflet/dist/leaflet.css": [
-    "/build/assets/CreateLocation-DhVaVN7m.js",
+    "/build/assets/CreateLocation-Clk7QW5W.js",
     "/build/assets/CreateLocation-CG6DamIu.css",
     "/build/assets/vue-multiselect-DIn9qltL.css",
     "/build/assets/layers-BWBAp2CZ.png",
@@ -15,13 +15,13 @@
     "/build/assets/ApiTablePagination-B-RdNvwQ.js"
   ],
   "resources/js/Components/Custom/LoadingPopup.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/Custom/NavigationLink.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/Custom/SidebarLink.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/Custom/Table.vue": [
     "/build/assets/TableDataCell-CYyPCF5y.js"
@@ -39,10 +39,10 @@
     "/build/assets/TableDataCell-CYyPCF5y.js"
   ],
   "resources/js/Components/Custom/Toast.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/Custom/ToastItem.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/DangerButton.vue": [
     "/build/assets/DeleteUserForm-CZV1EmUW.js"
@@ -57,7 +57,7 @@
     "/build/assets/Modal-coHTZA82.js"
   ],
   "resources/js/Components/Partials/Sidebar.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Components/PrimaryButton.vue": [
     "/build/assets/PrimaryButton-CqW5HCNI.js"
@@ -72,13 +72,13 @@
     "/build/assets/Textarea-DTP6Byu3.js"
   ],
   "resources/js/Composables/permissions.js": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Composables/toast.js": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Layouts/AuthenticatedLayout.vue": [
-    "/build/assets/AuthenticatedLayout-BqiNoRb0.js"
+    "/build/assets/AuthenticatedLayout-CIooxZeF.js"
   ],
   "resources/js/Layouts/GuestLayout.vue": [
     "/build/assets/GuestLayout-DfjJ78_K.js",
@@ -95,10 +95,10 @@
     "/build/assets/ForgotPassword-DogZJiP4.js"
   ],
   "resources/js/Pages/Auth/Login copy.vue": [
-    "/build/assets/Login copy-_qD5WLSw.js"
+    "/build/assets/Login copy-Dx-pqlDS.js"
   ],
   "resources/js/Pages/Auth/Login.vue": [
-    "/build/assets/Login-D6R_wEHz.js"
+    "/build/assets/Login-CuAMAzHA.js"
   ],
   "resources/js/Pages/Auth/Register.vue": [
     "/build/assets/Register-CMFU1iRi.js"
@@ -110,24 +110,24 @@
     "/build/assets/VerifyEmail-C8NJh5am.js"
   ],
   "resources/js/Pages/Dashboard.vue": [
-    "/build/assets/Dashboard-CVaqxPW2.js"
+    "/build/assets/Dashboard-BN4bj5St.js"
   ],
   "resources/js/Pages/Dashboards/IndexDashboardFull.vue": [
-    "/build/assets/IndexDashboardFull-CpjMsExW.js",
+    "/build/assets/IndexDashboardFull-NrXT1t6k.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Database/Branches/IndexBranch.vue": [
-    "/build/assets/IndexBranch-BstFELvg.js"
+    "/build/assets/IndexBranch-BdfLhkIc.js"
   ],
   "resources/js/Pages/Database/Employees/IndexEmployee.vue": [
-    "/build/assets/IndexEmployee-CHq2u6Ne.js",
+    "/build/assets/IndexEmployee-C3AoiUQ6.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Database/Expenditures/IndexExpenditure.vue": [
-    "/build/assets/IndexExpenditure-DAvmVLj7.js"
+    "/build/assets/IndexExpenditure-C58DLv2C.js"
   ],
   "resources/js/Pages/Database/Locations/CreateLocation.vue": [
-    "/build/assets/CreateLocation-DhVaVN7m.js",
+    "/build/assets/CreateLocation-Clk7QW5W.js",
     "/build/assets/CreateLocation-CG6DamIu.css",
     "/build/assets/vue-multiselect-DIn9qltL.css",
     "/build/assets/layers-BWBAp2CZ.png",
@@ -135,68 +135,71 @@
     "/build/assets/marker-icon-hN30_KVU.png"
   ],
   "resources/js/Pages/Database/Locations/IndexLocation.vue": [
-    "/build/assets/IndexLocation-gxwos-pu.js"
+    "/build/assets/IndexLocation-CC5rS1i2.js"
   ],
   "resources/js/Pages/Database/Positions/IndexPosition.vue": [
-    "/build/assets/IndexPosition-D2Gcmebm.js"
+    "/build/assets/IndexPosition-CQWcNjq7.js"
   ],
   "resources/js/Pages/Database/ProductCategories/IndexProductCategory.vue": [
-    "/build/assets/IndexProductCategory-B7Ek68dZ.js",
+    "/build/assets/IndexProductCategory-BHG9fW28.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Database/Products/IndexProduct.vue": [
-    "/build/assets/IndexProduct-CdtIZC8C.js",
+    "/build/assets/IndexProduct-D93IjbVX.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Database/Suppliers/IndexSupplier.vue": [
-    "/build/assets/IndexSupplier-MajLAVzT.js",
+    "/build/assets/IndexSupplier-DmnsYJ73.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Employees/Attendances/CreateAttendance.vue": [
-    "/build/assets/CreateAttendance-Y7jSHtdU.js",
+    "/build/assets/CreateAttendance-vEKuABR_.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Employees/Attendances/IndexAttendance.vue": [
-    "/build/assets/IndexAttendance-BSeX9nq8.js"
+    "/build/assets/IndexAttendance-D1eb8Nhz.js"
+  ],
+  "resources/js/Pages/Employees/Attendances/SelfAttendance.vue": [
+    "/build/assets/SelfAttendance-0DMib1n-.js"
   ],
   "resources/js/Pages/Employees/Attendances/ShowAttendance.vue": [
-    "/build/assets/ShowAttendance-f76fc_KI.js"
+    "/build/assets/ShowAttendance-B_o4SfdG.js"
   ],
   "resources/js/Pages/Employees/Mutations/CreateMutation.vue": [
-    "/build/assets/CreateMutation-Dv2Dt3FI.js",
+    "/build/assets/CreateMutation-C7-ITQ5r.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Employees/Mutations/IndexMutation.vue": [
-    "/build/assets/IndexMutation-DW59BIdO.js"
+    "/build/assets/IndexMutation-BS85EV9X.js"
   ],
   "resources/js/Pages/Employees/Performances/IndexPerformance.vue": [
-    "/build/assets/IndexPerformance-DA1vgzD6.js"
+    "/build/assets/IndexPerformance-Db8kXRs8.js"
   ],
   "resources/js/Pages/Employees/Terminations/CreateTermination.vue": [
-    "/build/assets/CreateTermination-DWyITUoO.js",
+    "/build/assets/CreateTermination-BZSQNjRf.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Employees/Terminations/IndexTermination.vue": [
-    "/build/assets/IndexTermination-3YhYzlkc.js"
+    "/build/assets/IndexTermination-DYBuLAD9.js"
   ],
   "resources/js/Pages/Managements/ManagementStructures/IndexManagementStructure.vue": [
-    "/build/assets/IndexManagementStructure-BLiwf_4D.js",
+    "/build/assets/IndexManagementStructure-BvRj-gDS.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Managements/Reports/IndexReport.vue": [
-    "/build/assets/IndexReport-MvphshYr.js",
+    "/build/assets/IndexReport-iiFd45um.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Managements/Reports/IndexReportBranch.vue": [
-    "/build/assets/IndexReportBranch-PqU0VnoE.js",
+    "/build/assets/IndexReportBranch-Dck34Ill.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Managements/Reports/Omzet.vue": [
-    "/build/assets/Omzet-BwmOphSS.js",
+    "/build/assets/Omzet-Cer3SUP9.js",
     "/build/assets/Omzet-Dly8_lRQ.css"
   ],
   "resources/js/Pages/Managements/Reports/Omzet.vue?vue&type=style&index=0&scoped=f0b517e6&lang.css": [
-    "/build/assets/Omzet-BwmOphSS.js",
+    "/build/assets/Omzet-Cer3SUP9.js",
     "/build/assets/Omzet-Dly8_lRQ.css"
   ],
   "resources/js/Pages/Managements/Reports/PembelianPersediaan.vue": [
@@ -232,31 +235,31 @@
     "/build/assets/PermintaanStok-CmVAuzQs.css"
   ],
   "resources/js/Pages/Operationals/Branches/IndexOperationalBranch.vue": [
-    "/build/assets/IndexOperationalBranch-BO57AJqW.js",
+    "/build/assets/IndexOperationalBranch-CP9ozd8_.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Operationals/Centers/IndexOperationalCenter.vue": [
-    "/build/assets/IndexOperationalCenter-45ZJMi6H.js",
+    "/build/assets/IndexOperationalCenter-D6U3n92W.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/BranchProducts/IndexBranchProduct.vue": [
-    "/build/assets/IndexBranchProduct-FppJfPFC.js",
+    "/build/assets/IndexBranchProduct-Bqyd0fH6.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/CenterProducts/IndexCenterProduct.vue": [
-    "/build/assets/IndexCenterProduct-DrEWgjyJ.js",
+    "/build/assets/IndexCenterProduct-Ga3aI6Vl.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/InventoryPurchases/CreateInventoryPurchase.vue": [
-    "/build/assets/CreateInventoryPurchase-B0C-hQfw.js",
+    "/build/assets/CreateInventoryPurchase-WPbNiAfw.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/InventoryPurchases/EditInventoryPurchase.vue": [
-    "/build/assets/EditInventoryPurchase-D6O3Iy4A.js",
+    "/build/assets/EditInventoryPurchase-CN0ONhKo.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/InventoryPurchases/IndexInventoryPurchase.vue": [
-    "/build/assets/IndexInventoryPurchase-DVp-QdpZ.js"
+    "/build/assets/IndexInventoryPurchase-3JpRDrnl.js"
   ],
   "resources/js/Pages/Products/InventoryPurchases/PrintBarcode.vue": [
     "/build/assets/PrintBarcode-CMBfjEeh.js",
@@ -267,41 +270,41 @@
     "/build/assets/PrintBarcode-CeWz4Ff6.css"
   ],
   "resources/js/Pages/Products/InventoryPurchases/ShowInventoryPurchase.vue": [
-    "/build/assets/ShowInventoryPurchase-Btt4HPY-.js",
+    "/build/assets/ShowInventoryPurchase-O18CNccN.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/CreateRequestOrder.vue": [
-    "/build/assets/CreateRequestOrder-D1C8IkWP.js",
+    "/build/assets/CreateRequestOrder-ilQLx-wx.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/EditRequestOrder.vue": [
-    "/build/assets/EditRequestOrder-Dl6nz1Hi.js",
+    "/build/assets/EditRequestOrder-D385kUhV.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/IndexRequestOrder.vue": [
-    "/build/assets/IndexRequestOrder-CjmiZnfp.js"
+    "/build/assets/IndexRequestOrder-47ymBnxW.js"
   ],
   "resources/js/Pages/Products/RequestReturns/CreateRequestReturn.vue": [
-    "/build/assets/CreateRequestReturn-BGFHTiAl.js",
+    "/build/assets/CreateRequestReturn-xxymQ_g9.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestReturns/EditRequestReturn.vue": [
-    "/build/assets/EditRequestReturn-C04kVSac.js",
+    "/build/assets/EditRequestReturn-C2K142Mj.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestReturns/IndexRequestReturn.vue": [
-    "/build/assets/IndexRequestReturn-Ce94c-Qs.js"
+    "/build/assets/IndexRequestReturn-C8jG56ti.js"
   ],
   "resources/js/Pages/Products/Sales/CreateSale.vue": [
-    "/build/assets/CreateSale-BALrNNy1.js",
+    "/build/assets/CreateSale-CLiRlHdM.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/Sales/IndexSale.vue": [
-    "/build/assets/IndexSale-Dd_jS6s4.js",
+    "/build/assets/IndexSale-B9Y1BuSZ.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Profile/Edit.vue": [
-    "/build/assets/Edit-DQUP0mgF.js"
+    "/build/assets/Edit-CPcB07gL.js"
   ],
   "resources/js/Pages/Profile/Partials/DeleteUserForm.vue": [
     "/build/assets/DeleteUserForm-CZV1EmUW.js"
@@ -313,20 +316,20 @@
     "/build/assets/UpdateProfileInformationForm-CIaSxL0C.js"
   ],
   "resources/js/Pages/Settings/ApprovalTypes/IndexApprovalType.vue": [
-    "/build/assets/IndexApprovalType-DEOv5LcH.js"
+    "/build/assets/IndexApprovalType-pwqXEOTX.js"
   ],
   "resources/js/Pages/Settings/Permissions/IndexPermission.vue": [
-    "/build/assets/IndexPermission-DB0ixckV.js"
+    "/build/assets/IndexPermission-BU1AY4Fp.js"
   ],
   "resources/js/Pages/Settings/Roles/IndexRole.vue": [
-    "/build/assets/IndexRole-ChAe0JR2.js"
+    "/build/assets/IndexRole-DHn_R5bp.js"
   ],
   "resources/js/Pages/Settings/Roles/ReadRole.vue": [
-    "/build/assets/ReadRole-ByWbQ0ZC.js",
+    "/build/assets/ReadRole-iPjt26Av.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Settings/Users/IndexUser.vue": [
-    "/build/assets/IndexUser-xEraJZjJ.js"
+    "/build/assets/IndexUser-BgY4kPph.js"
   ],
   "resources/js/Pages/Welcome.vue": [
     "/build/assets/Welcome-DukISFlL.js"

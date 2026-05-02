@@ -30,7 +30,9 @@ class ApiAuthController extends Controller
         }
 
         $token = $user->createToken($user->name)->plainTextToken;
-        $employee = Employee::where('employee_number', $user->username)->first();
+        $employee = Employee::where('user_id', $user->id)
+            ->orWhere('employee_number', $user->username)
+            ->first();
         $location = $employee ? Location::where('branch_id', $employee->branch_id)->first() : null;
 
         return response()->json([

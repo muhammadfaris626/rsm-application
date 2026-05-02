@@ -23,6 +23,7 @@ class EmployeeRequest extends FormRequest
     {
         return [
             'employee_number' => ['required'],
+            'user_id' => ['nullable'],
             'name' => ['required'],
             'place_of_birth' => ['required'],
             'date_of_birth' => ['required'],
@@ -35,6 +36,7 @@ class EmployeeRequest extends FormRequest
     public function messages(): array {
         return [
             'employee_number.required' => 'Kolom nomor karyawan wajib diisi.',
+            'user_id.exists' => 'Akun user yang dipilih tidak valid.',
             'name.required' => 'Kolom nama wajib diisi.',
             'address.required' => 'Kolom alamat wajib diisi.',
             'place_of_birth.required' => 'Kolom tempat lahir wajib diisi.',

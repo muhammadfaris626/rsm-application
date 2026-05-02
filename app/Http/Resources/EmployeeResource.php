@@ -18,6 +18,16 @@ class EmployeeResource extends JsonResource
         return [
             'id' => $this->id,
             'employee_number' => $this->employee_number,
+            'user_id' => $this->user_id,
+            'user' => $this->whenLoaded('user', function() {
+                return [
+                    'id' => $this->user->id,
+                    'name' => $this->user->name,
+                    'username' => $this->user->username,
+                    'email' => $this->user->email,
+                    'label' => "{$this->user->name} ({$this->user->username})",
+                ];
+            }),
             'name' => $this->name,
             'address' => $this->address,
             'place_of_birth' => $this->place_of_birth,

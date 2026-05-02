@@ -53,14 +53,29 @@ class EmployeeController extends Controller
         return $value;
     }
 
+    private function userOptions()
+    {
+        return User::select('id', 'name', 'username', 'email')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'label' => "{$user->name} ({$user->username})",
+            ]);
+    }
+
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Employee::class);
         
         // Optimized query with eager loading
         $searchQuery = Employee::query()
-            ->select('id', 'employee_number', 'name', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status', 'created_at', 'updated_at')
+            ->select('id', 'employee_number', 'user_id', 'name', 'place_of_birth', 'date_of_birth', 'phone', 'branch_id', 'status', 'created_at', 'updated_at')
             ->with([
                 'branch:id,branch_name,branch_code',
+                'user:id,name,username,email',
                 'updateEmployeeHistory.user',
             ])
             ->latest();
@@ -74,7 +89,8 @@ class EmployeeController extends Controller
         return Inertia::render('Database/Employees/IndexEmployee', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'branches' => BranchResource::collection($branches)
+            'branches' => BranchResource::collection($branches),
+            'users' => $this->userOptions(),
         ]);
     }
 
@@ -85,8 +101,35 @@ class EmployeeController extends Controller
 
     public function store(EmployeeRequest $request): RedirectResponse {
         Gate::authorize('create', Employee::class);
+        $userId = $this->fieldIdFromRequest($request->user_id);
+        if ($userId && Employee::where('user_id', $userId)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Akun user yang dipilih sudah terhubung dengan karyawan lain.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
+
+        $user = $userId
+            ? User::find($userId)
+            : User::firstOrCreate(
+                ['username' => $request->employee_number],
+                [
+                    'name' => $request->name,
+                    'email' => $request->employee_number . '@gmail.com',
+                    'email_verified_at' => now(),
+                    'password' => bcrypt('12345678'),
+                    'remember_token' => Str::random(10),
+                ]
+            );
+
+        if ($user && ! $user->hasRole('karyawan')) {
+            $user->assignRole('karyawan');
+        }
+
         $employee = Employee::create([
             'employee_number' => $request->employee_number,
+            'user_id' => $user?->id,
             'name' => $request->name,
             'place_of_birth' => $request->place_of_birth,
             'date_of_birth' => $request->date_of_birth,
@@ -98,14 +141,6 @@ class EmployeeController extends Controller
             'employee_id' => $employee->id,
             'user_id' => Auth::user()->id
         ]);
-        User::create([
-            'name' => $request->name,
-            'username' => $request->employee_number,
-            'email' => $request->employee_number . '@gmail.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('12345678'),
-            'remember_token' => Str::random(10)
-        ])->assignRole('karyawan');
         
         // Clear employee cache
         $this->clearRelatedCaches(['active_employees']);
@@ -127,9 +162,20 @@ class EmployeeController extends Controller
     public function update(EmployeeRequest $request, Employee $employee): RedirectResponse {
         Gate::authorize('update', $employee);
         $oldEmployeeNumber = $employee->employee_number;
+        $oldUserId = $employee->user_id;
+        $userId = $this->fieldIdFromRequest($request->user_id);
+
+        if ($userId && Employee::where('user_id', $userId)->where('id', '!=', $employee->id)->exists()) {
+            Session::flash('toast', [
+                'message' => 'Akun user yang dipilih sudah terhubung dengan karyawan lain.',
+                'type' => 'error'
+            ]);
+            return back();
+        }
         
         $employee->update([
             'employee_number' => $request->employee_number,
+            'user_id' => $userId,
             'name' => $request->name,
             'place_of_birth' => $request->place_of_birth,
             'date_of_birth' => $request->date_of_birth,
@@ -142,20 +188,19 @@ class EmployeeController extends Controller
             'user_id' => Auth::user()->id
         ]);
         
-        // Jika username (employee_number) berubah, update data user terkait
-        if ($oldEmployeeNumber !== $request->employee_number) {
-            $user = User::where('username', $oldEmployeeNumber)->first();
-            if ($user) {
-                $user->update([
-                    'name' => $request->name,
-                    'username' => $request->employee_number,
-                    'email' => $request->employee_number . '@gmail.com',
-                ]);
-            }
+        $linkedUser = $userId ? User::find($userId) : null;
+        if ($linkedUser && ! $linkedUser->hasRole('karyawan')) {
+            $linkedUser->assignRole('karyawan');
         }
         
         // Clear employee caches
-        $this->clearRelatedCaches(['active_employees', "employee_{$oldEmployeeNumber}", "employee_{$request->employee_number}"]);
+        $this->clearRelatedCaches(array_filter([
+            'active_employees',
+            "employee_{$oldEmployeeNumber}",
+            "employee_{$request->employee_number}",
+            $oldUserId ? "employee_user_{$oldUserId}" : null,
+            $userId ? "employee_user_{$userId}" : null,
+        ]));
         
         Session::flash('toast', [ 'message' => 'Data berhasil diubah.' ]);
         return back();
@@ -177,17 +222,18 @@ class EmployeeController extends Controller
         }
         
         $employeeNumber = $employee->employee_number;
+        $userId = $employee->user_id;
 
         UpdateEmployeeHistory::where('employee_id', $employee->id)->delete();
         $employee->delete();
 
-        $user = User::where('username', $employeeNumber)->first();
-        if ($user) {
+        $user = $employee->user_id ? User::find($employee->user_id) : User::where('username', $employeeNumber)->first();
+        if ($user && $user->username === $employeeNumber) {
             $user->delete();
         }
         
         // Clear employee caches
-        $this->clearRelatedCaches(['active_employees', "employee_{$employeeNumber}"]);
+        $this->clearRelatedCaches(array_filter(['active_employees', "employee_{$employeeNumber}", $userId ? "employee_user_{$userId}" : null]));
 
         Session::flash('toast', [ 'message' => 'Data karyawan berhasil dihapus.' ]);
         return back();

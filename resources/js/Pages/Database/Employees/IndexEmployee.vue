@@ -13,12 +13,14 @@
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
-    defineProps(["fetchData", 'branches']);
+    defineProps(["fetchData", 'branches', 'users']);
     const firstItem = (value) => Array.isArray(value) ? value[0] : value;
     const branchName = (value) => firstItem(value)?.branch_name ?? '-';
     const form = useForm({
         id: "",
         employee_number: "",
+        user_id: "",
+        user: "",
         name: "",
         place_of_birth: "",
         date_of_birth: "",
@@ -76,6 +78,8 @@
         showModalRead.value = true;
         form.id = data.id;
         form.employee_number = data.employee_number;
+        form.user_id = data.user_id;
+        form.user = data.user;
         form.name = data.name;
         form.place_of_birth = data.place_of_birth;
         form.date_of_birth = data.date_of_birth;
@@ -90,6 +94,7 @@
         showModalUpdate.value = true;
         form.id = data.id;
         form.employee_number = data.employee_number;
+        form.user_id = data.user ?? "";
         form.name = data.name;
         form.place_of_birth = data.place_of_birth;
         form.date_of_birth = data.date_of_birth;
@@ -308,6 +313,19 @@
                                 <InputError class="mt-2" :message="form.errors.name" />
                             </div>
                             <div>
+                                <InputLabel for="user_id" value="Akun User Login" />
+                                <VueMultiselect
+                                    v-model="form.user_id"
+                                    :options="users"
+                                    :close-on-select="true"
+                                    placeholder="Pilih akun user"
+                                    label="label"
+                                    track-by="id"
+                                />
+                                <p class="mt-1 text-xs text-gray-500">Kosongkan jika ingin sistem membuat akun dari nomor karyawan.</p>
+                                <InputError class="mt-2" :message="form.errors.user_id" />
+                            </div>
+                            <div>
                                 <InputLabel for="place_of_birth" value="Tempat Lahir" />
                                 <TextInput
                                     id="place_of_birth"
@@ -412,6 +430,14 @@
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            AKUN USER LOGIN
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.user?.label ?? '-' }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                             TTL
                                         </th>
                                         <td class="px-6 py-4">
@@ -498,6 +524,19 @@
                                     v-model="form.name"
                                 />
                                 <InputError class="mt-2" :message="form.errors.name" />
+                            </div>
+                            <div>
+                                <InputLabel for="user_id" value="Akun User Login" />
+                                <VueMultiselect
+                                    v-model="form.user_id"
+                                    :options="users"
+                                    :close-on-select="true"
+                                    placeholder="Pilih akun user"
+                                    label="label"
+                                    track-by="id"
+                                />
+                                <p class="mt-1 text-xs text-gray-500">Hubungkan karyawan ini dengan akun yang dipakai login.</p>
+                                <InputError class="mt-2" :message="form.errors.user_id" />
                             </div>
                             <div>
                                 <InputLabel for="place_of_birth" value="Tempat Lahir" />

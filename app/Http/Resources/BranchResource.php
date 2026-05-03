@@ -22,6 +22,9 @@ class BranchResource extends JsonResource
             'branch_address' => $this->branch_address,
             'description' => $this->description,
             'status' => $this->status,
+            'open_time' => $this->open_time,
+            'close_time' => $this->close_time,
+            'late_tolerance_minutes' => $this->late_tolerance_minutes,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'last_update' => $this->whenLoaded('updateBranchHistory', function() {

@@ -28,7 +28,8 @@ class BranchImport implements ToModel, WithHeadingRow {
         $branch = Branch::create([
             'branch_code' => $newCode,
             'branch_name' => $row['nama_cabang'],
-            'branch_address' => $row['alamat']
+            'branch_address' => $row['alamat'],
+            'late_tolerance_minutes' => 0,
         ]);
         return $branch;
     }

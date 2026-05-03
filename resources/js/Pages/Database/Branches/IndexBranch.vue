@@ -21,6 +21,9 @@
         branch_address: "",
         description: "",
         status: "",
+        open_time: "",
+        close_time: "",
+        late_tolerance_minutes: 0,
         last_update: "",
         created_at: "",
         updated_at: "",
@@ -81,6 +84,9 @@
         form.branch_address = data.branch_address;
         form.description = data.description;
         form.status = data.status;
+        form.open_time = data.open_time;
+        form.close_time = data.close_time;
+        form.late_tolerance_minutes = data.late_tolerance_minutes ?? 0;
         form.last_update = data.last_update;
         form.created_at = data.created_at;
         form.updated_at = data.updated_at;
@@ -93,6 +99,9 @@
         form.branch_address = data.branch_address;
         form.description = data.description ?? '';
         form.status = data.status;
+        form.open_time = data.open_time;
+        form.close_time = data.close_time;
+        form.late_tolerance_minutes = data.late_tolerance_minutes ?? 0;
     }
     const modalHapusData = (data) => {
         showModalDelete.value = true;
@@ -155,6 +164,11 @@
         } catch (error) {
             console.error('Gagal mengunduh file: ', error);
         }
+    }
+
+    const formatTime = (value) => {
+        if (!value) return '-';
+        return value.slice(0, 5);
     }
 </script>
 
@@ -240,6 +254,7 @@
                             <TableHeaderCell class="text-white">KODE CABANG</TableHeaderCell>
                             <TableHeaderCell class="text-white">NAMA CABANG</TableHeaderCell>
                             <TableHeaderCell class="text-white">ALAMAT CABANG</TableHeaderCell>
+                            <TableHeaderCell class="text-white">JAM OPERASIONAL</TableHeaderCell>
                             <TableHeaderCell class="text-white">STATUS CABANG</TableHeaderCell>
                             <TableHeaderCell class="text-white">AKSI</TableHeaderCell>
                         </TableRow>
@@ -250,6 +265,10 @@
                             <TableDataCell :status="'record'">{{ data.branch_code }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.branch_name }}</TableDataCell>
                             <TableDataCell :status="'record'">{{ data.branch_address }}</TableDataCell>
+                            <TableDataCell :status="'record'">
+                                {{ formatTime(data.open_time) }} - {{ formatTime(data.close_time) }}
+                                <span class="block text-xs text-gray-500">Toleransi {{ data.late_tolerance_minutes ?? 0 }} menit</span>
+                            </TableDataCell>
                             <TableDataCell :status="'record'">
                                 <p
                                     class="text-white font-medium rounded-sm text-sm px-2 text-center inline-flex items-center"
@@ -361,6 +380,21 @@
                                 </select>
                                 <InputError class="mt-2" :message="form.errors.status" />
                             </div>
+                            <div>
+                                <label for="open_time" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jam Buka</label>
+                                <input v-model="form.open_time" type="time" id="open_time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.open_time" />
+                            </div>
+                            <div>
+                                <label for="close_time" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jam Tutup</label>
+                                <input v-model="form.close_time" type="time" id="close_time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.close_time" />
+                            </div>
+                            <div>
+                                <label for="late_tolerance_minutes" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Toleransi Terlambat (menit)</label>
+                                <input v-model="form.late_tolerance_minutes" min="0" type="number" id="late_tolerance_minutes" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.late_tolerance_minutes" />
+                            </div>
                             <div class="col-span-2">
                                 <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Profil Cabang</label>
                                 <Textarea :row="9" v-model="form.description" :placeholder="'Silahkan masukkan profil cabang disini...'" />
@@ -429,6 +463,22 @@
                                             >
                                                 {{ form.status }}
                                             </p>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            JAM OPERASIONAL
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ formatTime(form.open_time) }} - {{ formatTime(form.close_time) }}
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            TOLERANSI TERLAMBAT
+                                        </th>
+                                        <td class="px-6 py-4">
+                                            {{ form.late_tolerance_minutes ?? 0 }} menit
                                         </td>
                                     </tr>
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
@@ -504,6 +554,21 @@
                                     <option value="Tidak Aktif">Tidak Aktif</option>
                                 </select>
                                 <InputError class="mt-2" :message="form.errors.status" />
+                            </div>
+                            <div>
+                                <label for="open_time_update" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jam Buka</label>
+                                <input v-model="form.open_time" type="time" id="open_time_update" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.open_time" />
+                            </div>
+                            <div>
+                                <label for="close_time_update" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jam Tutup</label>
+                                <input v-model="form.close_time" type="time" id="close_time_update" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.close_time" />
+                            </div>
+                            <div>
+                                <label for="late_tolerance_minutes_update" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Toleransi Terlambat (menit)</label>
+                                <input v-model="form.late_tolerance_minutes" min="0" type="number" id="late_tolerance_minutes_update" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                                <InputError :message="form.errors.late_tolerance_minutes" />
                             </div>
                             <div class="col-span-2">
                                 <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Profil Cabang</label>

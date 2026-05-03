@@ -10,11 +10,18 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import ApiTablePagination from '@/Components/Custom/ApiTablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
+    const props = defineProps({
+        branches: {
+            type: Array,
+            default: () => [],
+        },
+    });
     const { hasPermission } = usePermission();
     const firstItem = (value) => Array.isArray(value) ? value[0] : value;
     const branchName = (value) => firstItem(value)?.branch_name ?? '-';
 
     const search = ref("");
+    const selectedBranch = ref("");
     const fetchData = ref([]);
     const paginationMeta = ref({});
     const currentPage = ref(1);
@@ -25,7 +32,8 @@
             const { data } = await axios.get(`/api/employee-attendances`, {
                 params: {
                     page: currentPage.value,
-                    search: search.value
+                    search: search.value,
+                    branch_id: selectedBranch.value
                 }
             });
             fetchData.value = data.data.data;
@@ -40,11 +48,22 @@
         currentPage.value = 1;
         fetch();
     });
+    watch(selectedBranch, () => {
+        currentPage.value = 1;
+        fetch();
+    });
     onMounted(fetch);
     const changePage = (page) => {
         if (page !== currentPage.value) {
             currentPage.value = page;
         }
+    };
+
+    const resetFilter = () => {
+        search.value = "";
+        selectedBranch.value = "";
+        currentPage.value = 1;
+        fetch();
     };
 
 
@@ -73,8 +92,8 @@
 
             <!-- Search and Action Bar -->
             <div class="bg-white rounded-xl shadow-md p-4">
-                <div class="flex flex-col md:flex-row justify-between gap-4">
-                    <div class="w-full md:w-1/3">
+                <div class="flex flex-col xl:flex-row justify-between gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:w-3/4">
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 group-focus-within:text-sky-600 transition-colors">
@@ -88,6 +107,22 @@
                                 placeholder="Cari nomor karyawan, nama, atau cabang..."
                             >
                         </div>
+                        <select
+                            v-model="selectedBranch"
+                            class="bg-gray-50 border-2 border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 block w-full px-4 py-2.5"
+                        >
+                            <option value="">Semua Cabang</option>
+                            <option v-for="branch in props.branches" :key="branch.id" :value="branch.id">
+                                {{ branch.branch_name }}
+                            </option>
+                        </select>
+                        <button
+                            type="button"
+                            @click="resetFilter"
+                            class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        >
+                            Reset
+                        </button>
                     </div>
                     <div>
                         <template v-if="hasPermission('attendance: create')">

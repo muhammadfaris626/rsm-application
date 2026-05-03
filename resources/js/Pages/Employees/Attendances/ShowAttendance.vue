@@ -4,6 +4,7 @@ import { ref, onMounted, watch } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import axios from "axios";
 import TextInput from "@/Components/TextInput.vue";
+import Modal from '@/Components/Modal.vue';
 import Table from '@/Components/Custom/Table.vue';
 import TableRow from '@/Components/Custom/TableRow.vue';
 import TableHeaderCell from '@/Components/Custom/TableHeaderCell.vue';
@@ -16,33 +17,55 @@ const props = defineProps({
 const fetchData = ref([]);
 const selectStartDate = ref(null);
 const selectEndDate = ref(null);
+const showPhotoModal = ref(false);
+const selectedPhoto = ref({
+    title: '',
+    url: '',
+});
 
-// Fungsi untuk mendapatkan daftar tanggal dalam bulan berjalan
-const getCurrentMonthDates = () => {
+const formatDateInput = (date) => {
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+const buildDateRows = () => {
     let dates = [];
-    let today = new Date();
-    let startDate = new Date(today.getFullYear(), today.getMonth(), 2); // Tanggal 1 bulan ini
-    let endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // Tanggal terakhir bulan ini
-
-    selectStartDate.value = startDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
-    selectEndDate.value = endDate.toISOString().split("T")[0];
+    let startDate = new Date(`${selectStartDate.value}T00:00:00`);
+    let endDate = new Date(`${selectEndDate.value}T00:00:00`);
 
     while (startDate <= endDate) {
         dates.push({
-            work_date: startDate.toISOString().split("T")[0],
+            work_date: formatDateInput(startDate),
+            attendance_type: null,
             check_in: null,
-            check_out: null
+            check_out: null,
+            late_minutes: 0,
+            attendance_status: null,
+            attendance_note: null,
+            early_leave_minutes: 0,
+            checkout_status: null
         });
         startDate.setDate(startDate.getDate() + 1);
     }
+
     return dates;
 };
 
-const allDates = ref(getCurrentMonthDates());
+const setDefaultDateRange = () => {
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    selectStartDate.value = formatDateInput(startDate);
+    selectEndDate.value = formatDateInput(endDate);
+};
+
+setDefaultDateRange();
 
 // Ambil data dari API dan cocokkan dengan daftar tanggal bulan berjalan
 const getData = async () => {
     try {
+        const dateRows = buildDateRows();
         const response = await axios.get(`/api/employee-attendances/${props.id}`, {
             params: {
                 start_date: selectStartDate.value,
@@ -53,7 +76,7 @@ const getData = async () => {
         const apiData = response.data.attendances || [];
 
         // Gabungkan dengan daftar tanggal jika tidak ditemukan di API
-        fetchData.value = allDates.value.map(item => {
+        fetchData.value = dateRows.map(item => {
             const match = apiData.find(d => d.work_date === item.work_date);
             return match ? match : item;
         });
@@ -63,6 +86,15 @@ const getData = async () => {
 };
 
 onMounted(getData);
+
+const applyDateFilter = () => {
+    getData();
+};
+
+const resetDateFilter = () => {
+    setDefaultDateRange();
+    getData();
+};
 
 const formatTanggal = (dateString) => {
     const date = new Date(dateString);
@@ -81,6 +113,26 @@ const formatJam = (dateString) => {
         minute: '2-digit',
         hourCycle: 'h23', // Format 24 jam
     }).format(date);
+};
+
+const photoUrl = (path) => path ? `/storage/${path}` : '';
+
+const openPhoto = (title, path) => {
+    if (!path) return;
+
+    selectedPhoto.value = {
+        title,
+        url: photoUrl(path),
+    };
+    showPhotoModal.value = true;
+};
+
+const closePhoto = () => {
+    showPhotoModal.value = false;
+    selectedPhoto.value = {
+        title: '',
+        url: '',
+    };
 };
 </script>
 
@@ -118,30 +170,126 @@ const formatJam = (dateString) => {
                     </ol>
                 </nav>
             </div>
-            <div class="flex justify-end my-4">
-                <!-- <div class="flex items-center">
-                    Dari: <TextInput type="date" class="mx-2 w-32" v-model="selectStartDate" />
-                    Sampai: <TextInput type="date" class="mx-2 w-32" v-model="selectEndDate" />
-                </div> -->
+            <div class="bg-white rounded-xl shadow-md p-4 my-4">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block mb-1 text-sm font-medium text-gray-700">Dari Tanggal</label>
+                            <TextInput type="date" class="w-full" v-model="selectStartDate" />
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                            <TextInput type="date" class="w-full" v-model="selectEndDate" />
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button
+                            type="button"
+                            @click="applyDateFilter"
+                            class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg"
+                        >
+                            Tampilkan
+                        </button>
+                        <button
+                            type="button"
+                            @click="resetDateFilter"
+                            class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        >
+                            Bulan Ini
+                        </button>
+                    </div>
+                </div>
             </div>
-            <Table>
+            <Table tableClass="min-w-[1500px] table-fixed">
                 <template #header>
                     <TableRow>
-                        <TableHeaderCell>NO</TableHeaderCell>
-                        <TableHeaderCell>TANGGAL</TableHeaderCell>
-                        <TableHeaderCell class="text-center">JAM MASUK</TableHeaderCell>
-                        <TableHeaderCell class="text-center">JAM KELUAR</TableHeaderCell>
+                        <TableHeaderCell class="w-[70px] whitespace-nowrap">NO</TableHeaderCell>
+                        <TableHeaderCell class="w-[150px] whitespace-nowrap">TANGGAL</TableHeaderCell>
+                        <TableHeaderCell class="w-[120px] text-center whitespace-nowrap">JENIS</TableHeaderCell>
+                        <TableHeaderCell class="w-[140px] text-center whitespace-nowrap">JAM MASUK</TableHeaderCell>
+                        <TableHeaderCell class="w-[190px] text-center whitespace-nowrap">STATUS MASUK</TableHeaderCell>
+                        <TableHeaderCell class="w-[140px] text-center whitespace-nowrap">JAM KELUAR</TableHeaderCell>
+                        <TableHeaderCell class="w-[190px] text-center whitespace-nowrap">STATUS KELUAR</TableHeaderCell>
+                        <TableHeaderCell class="w-[280px] whitespace-nowrap">KETERANGAN</TableHeaderCell>
+                        <TableHeaderCell class="w-[220px] text-center whitespace-nowrap">FOTO</TableHeaderCell>
                     </TableRow>
                 </template>
                 <template #default>
                     <TableRow v-for="(data, index) in fetchData" :key="index">
-                        <TableDataCell :status="'number'" class="border border-b-1">{{ index + 1 }}</TableDataCell>
-                        <TableDataCell :status="'record'" class="border border-b-1">{{ formatTanggal(data.work_date) }}</TableDataCell>
-                        <TableDataCell :status="'record'" class="text-center border border-b-1">{{ formatJam(data.check_in) }}</TableDataCell>
-                        <TableDataCell :status="'record'" class="text-center border border-b-1">{{ formatJam(data.check_out) }}</TableDataCell>
+                        <TableDataCell :status="'number'" class="border border-b-1 whitespace-nowrap">{{ index + 1 }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="border border-b-1 whitespace-nowrap">{{ formatTanggal(data.work_date) }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">{{ data.attendance_type ?? '-' }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">{{ formatJam(data.check_in) }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">
+                            <span
+                                v-if="data.attendance_status"
+                                class="inline-flex items-center whitespace-nowrap px-2 py-1 rounded text-xs font-semibold"
+                                :class="data.attendance_status === 'Terlambat' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                            >
+                                {{ data.attendance_status }}
+                                <template v-if="data.late_minutes">&nbsp;({{ data.late_minutes }} menit)</template>
+                            </span>
+                            <span v-else>-</span>
+                        </TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">{{ formatJam(data.check_out) }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">
+                            <span
+                                v-if="data.checkout_status"
+                                class="inline-flex items-center whitespace-nowrap px-2 py-1 rounded text-xs font-semibold"
+                                :class="data.checkout_status === 'Pulang cepat' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'"
+                            >
+                                {{ data.checkout_status }}
+                                <template v-if="data.early_leave_minutes">&nbsp;({{ data.early_leave_minutes }} menit)</template>
+                            </span>
+                            <span v-else>-</span>
+                        </TableDataCell>
+                        <TableDataCell :status="'record'" class="border border-b-1 whitespace-nowrap truncate">{{ data.attendance_note ?? '-' }}</TableDataCell>
+                        <TableDataCell :status="'record'" class="text-center border border-b-1 whitespace-nowrap">
+                            <div class="flex flex-nowrap justify-center gap-2">
+                                <button
+                                    type="button"
+                                    @click="openPhoto('Foto Absen Masuk', data.check_in_photo)"
+                                    :disabled="!data.check_in_photo"
+                                    class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded"
+                                >
+                                    Masuk
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="openPhoto('Foto Absen Keluar', data.check_out_photo)"
+                                    :disabled="!data.check_out_photo"
+                                    class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded"
+                                >
+                                    Keluar
+                                </button>
+                            </div>
+                        </TableDataCell>
                     </TableRow>
                 </template>
             </Table>
+
+            <Modal :show="showPhotoModal" @close="closePhoto">
+                <div class="relative w-full max-w-3xl bg-white rounded-lg shadow">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ selectedPhoto.title }}</h3>
+                        <button
+                            type="button"
+                            @click="closePhoto"
+                            class="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <img
+                            v-if="selectedPhoto.url"
+                            :src="selectedPhoto.url"
+                            :alt="selectedPhoto.title"
+                            class="w-full max-h-[70vh] object-contain rounded-lg bg-gray-100"
+                        >
+                    </div>
+                </div>
+            </Modal>
         </div>
     </AuthenticatedLayout>
 </template>

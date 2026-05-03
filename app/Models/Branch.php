@@ -10,7 +10,16 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_code', 'branch_name', 'branch_address', 'description', 'status'];
+    protected $fillable = [
+        'branch_code',
+        'branch_name',
+        'branch_address',
+        'description',
+        'status',
+        'open_time',
+        'close_time',
+        'late_tolerance_minutes',
+    ];
 
     public function updateBranchHistory(): HasMany {
         return $this->hasMany(UpdateBranchHistory::class);

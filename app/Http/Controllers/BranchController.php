@@ -36,7 +36,7 @@ class BranchController extends Controller
         Gate::authorize('viewAny', Branch::class);
         
         $searchQuery = Branch::query()
-            ->select('id', 'branch_code', 'branch_name', 'branch_address', 'description', 'status', 'created_at', 'updated_at')
+            ->select('id', 'branch_code', 'branch_name', 'branch_address', 'description', 'status', 'open_time', 'close_time', 'late_tolerance_minutes', 'created_at', 'updated_at')
             ->with(['updateBranchHistory.user'])
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
@@ -57,7 +57,9 @@ class BranchController extends Controller
 
     public function store(BranchRequest $request): RedirectResponse {
         Gate::authorize('create', Branch::class);
-        $branch = Branch::create($request->validated());
+        $validated = $request->validated();
+        $validated['late_tolerance_minutes'] = $validated['late_tolerance_minutes'] ?? 0;
+        $branch = Branch::create($validated);
         UpdateBranchHistory::create([
             'branch_id' => $branch->id,
             'user_id' => Auth::user()->id
@@ -84,7 +86,9 @@ class BranchController extends Controller
 
     public function update(BranchRequest $request, Branch $branch): RedirectResponse {
         Gate::authorize('update', $branch);
-        $branch->update($request->validated());
+        $validated = $request->validated();
+        $validated['late_tolerance_minutes'] = $validated['late_tolerance_minutes'] ?? 0;
+        $branch->update($validated);
         UpdateBranchHistory::create([
             'branch_id' => $branch->id,
             'user_id' => Auth::user()->id

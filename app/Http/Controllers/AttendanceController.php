@@ -74,6 +74,136 @@ class AttendanceController extends Controller {
         ]);
     }
 
+    public function summary(Request $request): Response
+    {
+        Gate::authorize('viewAny', Attendance::class);
+
+        $user = Auth::user();
+        abort_if($user->hasRole('karyawan'), 403);
+
+        $startDate = $request->filled('start_date')
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth()->startOfDay();
+        $endDate = $request->filled('end_date')
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::today()->endOfDay();
+
+        if ($endDate->greaterThan(Carbon::today()->endOfDay())) {
+            $endDate = Carbon::today()->endOfDay();
+        }
+
+        if ($startDate->greaterThan($endDate)) {
+            $startDate = $endDate->copy()->startOfDay();
+        }
+
+        $adminBranchId = null;
+        if ($user->hasRole('admin-branch')) {
+            $adminBranchId = Employee::where('employee_number', $user->username)->value('branch_id');
+        }
+
+        $selectedBranchId = $adminBranchId ?: $request->branch_id;
+        $days = (int) $startDate->diffInDays($endDate) + 1;
+
+        $branches = Branch::query()
+            ->select('id', 'branch_code', 'branch_name', 'status')
+            ->where('status', 'Aktif')
+            ->when($adminBranchId, fn ($query) => $query->where('id', $adminBranchId))
+            ->orderBy('branch_name')
+            ->get();
+
+        $employees = Employee::query()
+            ->select('id', 'name', 'branch_id')
+            ->where('status', 'Aktif')
+            ->whereNotNull('branch_id')
+            ->when($selectedBranchId, fn ($query) => $query->where('branch_id', $selectedBranchId))
+            ->get();
+
+        $employeeIds = $employees->pluck('id');
+        $attendances = Attendance::query()
+            ->select('id', 'employee_id', 'work_date', 'attendance_type', 'attendance_status', 'check_in', 'check_out')
+            ->whereIn('employee_id', $employeeIds)
+            ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        $employeesByBranch = $employees->groupBy('branch_id');
+        $attendancesByBranch = $attendances->groupBy(fn ($attendance) => $employees->firstWhere('id', $attendance->employee_id)?->branch_id);
+
+        $branchSummaries = $branches
+            ->when($selectedBranchId, fn ($collection) => $collection->where('id', (int) $selectedBranchId))
+            ->values()
+            ->map(function (Branch $branch) use ($employeesByBranch, $attendancesByBranch, $days) {
+                $branchEmployees = $employeesByBranch->get($branch->id, collect());
+                $branchAttendances = $attendancesByBranch->get($branch->id, collect());
+                $totalSlots = $branchEmployees->count() * $days;
+                $attendedSlots = $branchAttendances
+                    ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin']))
+                    ->unique(fn ($attendance) => $attendance->employee_id . '-' . $attendance->work_date)
+                    ->count();
+                $late = $branchAttendances->where('attendance_status', 'Terlambat')->count();
+                $onTime = $branchAttendances
+                    ->filter(fn ($attendance) => $attendance->attendance_type === 'Hadir'
+                        && $attendance->check_in
+                        && $attendance->attendance_status !== 'Terlambat')
+                    ->count();
+                $sick = $branchAttendances->where('attendance_type', 'Sakit')->count();
+                $permit = $branchAttendances->where('attendance_type', 'Izin')->count();
+                $incompleteCheckout = $branchAttendances
+                    ->filter(fn ($attendance) => $attendance->check_in && !$attendance->check_out)
+                    ->count();
+                $notAbsent = max($totalSlots - $attendedSlots, 0);
+
+                return [
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->branch_name,
+                    'employee_count' => $branchEmployees->count(),
+                    'total_slots' => $totalSlots,
+                    'on_time' => $onTime,
+                    'late' => $late,
+                    'sick' => $sick,
+                    'permit' => $permit,
+                    'not_absent' => $notAbsent,
+                    'incomplete_checkout' => $incompleteCheckout,
+                    'on_time_percentage' => $this->percentage($onTime, $totalSlots),
+                    'late_percentage' => $this->percentage($late, $totalSlots),
+                    'not_absent_percentage' => $this->percentage($notAbsent, $totalSlots),
+                    'discipline_percentage' => $this->percentage($onTime, max($onTime + $late + $notAbsent, 0)),
+                ];
+            });
+
+        $overall = [
+            'employee_count' => $branchSummaries->sum('employee_count'),
+            'total_slots' => $branchSummaries->sum('total_slots'),
+            'on_time' => $branchSummaries->sum('on_time'),
+            'late' => $branchSummaries->sum('late'),
+            'sick' => $branchSummaries->sum('sick'),
+            'permit' => $branchSummaries->sum('permit'),
+            'not_absent' => $branchSummaries->sum('not_absent'),
+            'incomplete_checkout' => $branchSummaries->sum('incomplete_checkout'),
+        ];
+
+        $overall['on_time_percentage'] = $this->percentage($overall['on_time'], $overall['total_slots']);
+        $overall['late_percentage'] = $this->percentage($overall['late'], $overall['total_slots']);
+        $overall['not_absent_percentage'] = $this->percentage($overall['not_absent'], $overall['total_slots']);
+
+        return Inertia::render('Employees/Attendances/SummaryAttendance', [
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranchId ? (int) $selectedBranchId : null,
+            'period' => [
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            'overall' => $overall,
+            'branchSummaries' => $branchSummaries,
+            'isBranchAdmin' => (bool) $adminBranchId,
+        ]);
+    }
+
+    private function percentage(int|float $value, int|float $total): float
+    {
+        return $total > 0 ? round(($value / $total) * 100, 1) : 0;
+    }
+
     public function selfAttendance(): Response
     {
         $employee = Employee::select('id', 'employee_number', 'user_id', 'name', 'branch_id')

@@ -273,7 +273,7 @@
                     </button>
                     <ul id="karyawan" class="py-2"
                         :class="{ hidden: !isRouteActive([
-                            'attendances.index', 'attendances.create', 'attendances.show',
+                            'attendances.index', 'attendances.create', 'attendances.show', 'attendances.summary',
                             'performances.index',
                             'mutations.index', 'mutations.create', 'mutations.edit', 'mutations.show',
                             'terminations.index', 'terminations.create', 'terminations.edit', 'terminations.show'
@@ -283,6 +283,11 @@
                             <li>
                                 <SidebarLink :href="route('attendances.index')" :active="isRouteActive(['attendances.index', 'attendances.create', 'attendances.show'])">
                                     Absensi
+                                </SidebarLink>
+                            </li>
+                            <li>
+                                <SidebarLink :href="route('attendances.summary')" :active="isRouteActive(['attendances.summary'])">
+                                    Rekap Absensi
                                 </SidebarLink>
                             </li>
                         </template>

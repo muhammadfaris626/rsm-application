@@ -6,11 +6,31 @@
     import TextInput from "@/Components/TextInput.vue";
     import VueApexCharts from 'vue3-apexcharts';
 
-    const props = defineProps(['branches', 'sales', 'employeeActive', 'branchActive', 'expenditures', 'profile', 'userRoleVisitor', 'recentSales', 'recentOrders', 'topProducts', 'monthlyStats']);
+    const props = defineProps([
+        'branches',
+        'sales',
+        'employeeActive',
+        'branchActive',
+        'expenditures',
+        'profile',
+        'userRoleVisitor',
+        'dashboardType',
+        'currentEmployee',
+        'attendancePeriod',
+        'attendanceSummary',
+        'topDiligentEmployees',
+        'topAttentionEmployees',
+        'recentSales',
+        'recentOrders',
+        'topProducts',
+        'monthlyStats'
+    ]);
 
-    const selectBranch = ref(''), selectStartDate = ref(''), selectEndDate = ref('');
-    let optionBranch = ref(selectBranch), optionStartDate = ref(selectStartDate), optionEndDate = ref(selectEndDate);
+    const selectBranch = ref('');
+    const selectStartDate = ref(props.attendancePeriod?.start_date || '');
+    const selectEndDate = ref(props.attendancePeriod?.end_date || '');
     const showFilters = ref(false);
+    const isEmployeeDashboard = computed(() => props.dashboardType === 'employee-attendance');
 
     const hasActiveFilters = computed(() => {
         return selectBranch.value || selectStartDate.value || selectEndDate.value;
@@ -24,12 +44,12 @@
 
     const filterUrl = computed(() => {
         let url = new URL(route('dashboard'));
-        if (optionBranch.value) {
-            url.searchParams.append("branch", optionBranch.value.id);
+        if (selectBranch.value) {
+            url.searchParams.append("branch", selectBranch.value.id);
         }
-        if (optionStartDate.value && optionEndDate.value) {
-            url.searchParams.append("start_date", optionStartDate.value);
-            url.searchParams.append("end_date", optionEndDate.value);
+        if (selectStartDate.value && selectEndDate.value) {
+            url.searchParams.append("start_date", selectStartDate.value);
+            url.searchParams.append("end_date", selectEndDate.value);
         }
         return url;
     });
@@ -44,9 +64,12 @@
 
     onMounted(() => {
         if (window.location.search) {
-            router.visit(route("dashboard"), {
-                replace: true
-            });
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has('start_date') && !params.has('end_date') && !params.has('branch')) {
+                router.visit(route("dashboard"), {
+                    replace: true
+                });
+            }
         }
     });
 
@@ -158,6 +181,25 @@
             }
         };
     });
+
+    const summaryCards = computed(() => {
+        const summary = props.attendanceSummary || {};
+
+        return [
+            { label: 'Hadir', value: summary.present || 0, color: 'from-green-500 to-green-600' },
+            { label: 'Terlambat', value: summary.late || 0, color: 'from-red-500 to-red-600' },
+            { label: 'Sakit', value: summary.sick || 0, color: 'from-yellow-500 to-yellow-600' },
+            { label: 'Izin', value: summary.permit || 0, color: 'from-blue-500 to-blue-600' },
+            { label: 'Belum Absen Keluar', value: summary.incomplete || 0, color: 'from-purple-500 to-purple-600' },
+        ];
+    });
+
+    const formatDate = (date) => {
+        if (!date) return '-';
+        return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${date}T00:00:00`));
+    };
+
+    const formatTime = (time) => time ? time.slice(0, 5) : '-';
 </script>
 
 <template>
@@ -169,7 +211,9 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">Selamat datang kembali! Berikut ringkasan aktivitas hari ini.</p>
+                        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                            {{ isEmployeeDashboard ? 'Ringkasan absensi dan kedisiplinan karyawan.' : 'Selamat datang kembali! Berikut ringkasan aktivitas hari ini.' }}
+                        </p>
                     </div>
                     <div class="flex items-center justify-end">
                         <button @click="showFilters = !showFilters"
@@ -189,7 +233,7 @@
                 <div v-show="showFilters" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                     <div class="flex flex-wrap gap-4">
                         <!-- Branch Filter -->
-                        <div v-if="userRoleVisitor != 'admin-branch'" class="flex flex-col flex-1 min-w-[200px] max-w-full">
+                        <div v-if="!isEmployeeDashboard && userRoleVisitor != 'admin-branch'" class="flex flex-col flex-1 min-w-[200px] max-w-full">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 whitespace-nowrap">Cabang</label>
                             <div class="flex-shrink-0">
                                 <VueMultiselect
@@ -244,6 +288,127 @@
                 </div>
             </div>
 
+            <div v-if="isEmployeeDashboard" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
+                        <p class="text-blue-100 text-sm font-semibold uppercase">Absensi Saya</p>
+                        <h2 class="text-2xl font-bold mt-2">{{ currentEmployee?.name || 'Data karyawan belum terhubung' }}</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 text-sm">
+                            <div>
+                                <p class="text-blue-100">Nomor Karyawan</p>
+                                <p class="font-semibold mt-1">{{ currentEmployee?.employee_number || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-blue-100">Cabang</p>
+                                <p class="font-semibold mt-1">{{ currentEmployee?.branch_name || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-blue-100">Periode</p>
+                                <p class="font-semibold mt-1">{{ formatDate(attendancePeriod?.start_date) }} - {{ formatDate(attendancePeriod?.end_date) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Jam Operasional Cabang</p>
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Jam Masuk</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ formatTime(currentEmployee?.open_time) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Jam Pulang</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ formatTime(currentEmployee?.close_time) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600 dark:text-gray-300">Toleransi</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ currentEmployee?.late_tolerance_minutes || 0 }} menit</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div
+                        v-for="card in summaryCards"
+                        :key="card.label"
+                        :class="['rounded-xl shadow-lg p-5 text-white bg-gradient-to-br', card.color]"
+                    >
+                        <p class="text-sm font-semibold text-white/80">{{ card.label }}</p>
+                        <p class="text-3xl font-bold mt-2">{{ card.value }}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top 10 Karyawan Paling Rajin</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Urutan dari jumlah hadir terbanyak dan keterlambatan paling sedikit.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[720px] text-sm">
+                                <thead class="bg-blue-500 text-white">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">No</th>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">Karyawan</th>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">Cabang</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Hadir</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Terlambat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(employee, index) in topDiligentEmployees" :key="employee.id" class="border-b border-gray-100 dark:border-gray-700">
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900 dark:text-white">{{ employee.name }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">{{ employee.branch_name }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.present_count }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.late_count }}</td>
+                                    </tr>
+                                    <tr v-if="!topDiligentEmployees || topDiligentEmployees.length === 0">
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Top 10 Perlu Perhatian</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Dinilai dari terlambat, sakit, izin, dan absen keluar yang belum lengkap.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[820px] text-sm">
+                                <thead class="bg-red-500 text-white">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">No</th>
+                                        <th class="px-4 py-3 text-left whitespace-nowrap">Karyawan</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Terlambat</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Sakit</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Izin</th>
+                                        <th class="px-4 py-3 text-center whitespace-nowrap">Belum Keluar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(employee, index) in topAttentionEmployees" :key="employee.id" class="border-b border-gray-100 dark:border-gray-700">
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900 dark:text-white">{{ employee.name }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.late_count }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.sick_count }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.permit_count }}</td>
+                                        <td class="px-4 py-3 text-center whitespace-nowrap">{{ employee.incomplete_count }}</td>
+                                    </tr>
+                                    <tr v-if="!topAttentionEmployees || topAttentionEmployees.length === 0">
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else class="space-y-6">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Omzet Card -->
@@ -474,6 +639,7 @@
                         <p class="text-gray-700 dark:text-gray-300 leading-relaxed">{{ profile.description || 'Tidak ada deskripsi' }}</p>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     </AuthenticatedLayout>

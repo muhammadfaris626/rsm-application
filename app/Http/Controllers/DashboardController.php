@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\BranchResource;
+use App\Models\Attendance;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\OperationalBranch;
@@ -20,7 +21,11 @@ class DashboardController extends Controller {
         $user = Auth::user();
         $userRole = $user->roles->first()?->name;
         $employee = null;
-        
+
+        if ($user->hasRole('karyawan')) {
+            return $this->employeeAttendanceDashboard($request, $userRole);
+        }
+
         // Cache key untuk data user
         $cachePrefix = "dashboard_{$user->id}_{$request->branch}_{$request->start_date}_{$request->end_date}";
         
@@ -166,6 +171,127 @@ class DashboardController extends Controller {
             'userRoleVisitor' => $userRole,
             'recentSales' => $recentSalesQuery,
             'recentOrders' => $recentOrdersQuery,
+        ]);
+    }
+
+    private function employeeAttendanceDashboard(Request $request, ?string $userRole): Response
+    {
+        $user = Auth::user();
+        $startDate = $request->start_date && $request->end_date
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : Carbon::now()->startOfMonth()->startOfDay();
+        $endDate = $request->start_date && $request->end_date
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : Carbon::now()->endOfMonth()->endOfDay();
+
+        $employee = Employee::query()
+            ->select('id', 'employee_number', 'name', 'branch_id')
+            ->with('branch:id,branch_name,open_time,close_time,late_tolerance_minutes')
+            ->where('user_id', $user->id)
+            ->orWhere('employee_number', $user->username)
+            ->first();
+
+        $employeeQuery = Employee::query()
+            ->select('id', 'employee_number', 'name', 'branch_id')
+            ->with('branch:id,branch_name')
+            ->where('status', 'Aktif')
+            ->when($employee?->branch_id, fn ($query) => $query->where('branch_id', $employee->branch_id))
+            ->withCount([
+                'attendances as present_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->where('attendance_type', 'Hadir')
+                    ->whereNotNull('check_in'),
+                'attendances as late_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->where('attendance_status', 'Terlambat'),
+                'attendances as sick_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->where('attendance_type', 'Sakit'),
+                'attendances as permit_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->where('attendance_type', 'Izin'),
+                'attendances as incomplete_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->whereNotNull('check_in')
+                    ->whereNull('check_out'),
+            ]);
+
+        $employees = $employeeQuery->get();
+
+        $mapEmployee = fn (Employee $item) => [
+            'id' => $item->id,
+            'name' => $item->name,
+            'employee_number' => $item->employee_number,
+            'branch_name' => $item->branch?->branch_name ?? '-',
+            'present_count' => $item->present_count,
+            'late_count' => $item->late_count,
+            'sick_count' => $item->sick_count,
+            'permit_count' => $item->permit_count,
+            'incomplete_count' => $item->incomplete_count,
+            'attention_score' => $item->late_count + $item->sick_count + $item->permit_count + $item->incomplete_count,
+        ];
+
+        $topDiligentEmployees = $employees
+            ->sort(function (Employee $first, Employee $second) {
+                return [$second->present_count, $first->late_count, $first->incomplete_count, $first->name]
+                    <=> [$first->present_count, $second->late_count, $second->incomplete_count, $second->name];
+            })
+            ->take(10)
+            ->values()
+            ->map($mapEmployee);
+
+        $topAttentionEmployees = $employees
+            ->sort(function (Employee $first, Employee $second) {
+                $firstScore = $first->late_count + $first->sick_count + $first->permit_count + $first->incomplete_count;
+                $secondScore = $second->late_count + $second->sick_count + $second->permit_count + $second->incomplete_count;
+
+                return [$secondScore, $first->present_count, $first->name]
+                    <=> [$firstScore, $second->present_count, $second->name];
+            })
+            ->take(10)
+            ->values()
+            ->map($mapEmployee);
+
+        $myAttendances = $employee
+            ? Attendance::query()
+                ->where('employee_id', $employee->id)
+                ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->get()
+            : collect();
+
+        return Inertia::render('Dashboards/IndexDashboardFull', [
+            'branches' => [],
+            'sales' => [],
+            'expenditures' => [],
+            'employeeActive' => 0,
+            'branchActive' => 0,
+            'profile' => null,
+            'userRoleVisitor' => $userRole,
+            'dashboardType' => 'employee-attendance',
+            'currentEmployee' => $employee ? [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'employee_number' => $employee->employee_number,
+                'branch_name' => $employee->branch?->branch_name ?? '-',
+                'open_time' => $employee->branch?->open_time,
+                'close_time' => $employee->branch?->close_time,
+                'late_tolerance_minutes' => $employee->branch?->late_tolerance_minutes ?? 0,
+            ] : null,
+            'attendancePeriod' => [
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+            ],
+            'attendanceSummary' => [
+                'present' => $myAttendances->where('attendance_type', 'Hadir')->whereNotNull('check_in')->count(),
+                'late' => $myAttendances->where('attendance_status', 'Terlambat')->count(),
+                'sick' => $myAttendances->where('attendance_type', 'Sakit')->count(),
+                'permit' => $myAttendances->where('attendance_type', 'Izin')->count(),
+                'incomplete' => $myAttendances->whereNotNull('check_in')->whereNull('check_out')->count(),
+            ],
+            'topDiligentEmployees' => $topDiligentEmployees,
+            'topAttentionEmployees' => $topAttentionEmployees,
+            'recentSales' => [],
+            'recentOrders' => [],
         ]);
     }
 }

@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('/employee')->group(function() {
         Route::get('/my-attendance', [AttendanceController::class, 'selfAttendance'])->name('attendances.self');
         Route::post('/my-attendance/absence', [AttendanceController::class, 'submitAbsence'])->name('attendances.absence');
+        Route::get('/attendances/summary', [AttendanceController::class, 'summary'])->name('attendances.summary');
         Route::resource('/attendances', AttendanceController::class);
         Route::resource('/performances', PerformanceController::class);
         Route::resource('/mutations', MutationController::class);

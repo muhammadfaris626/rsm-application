@@ -112,7 +112,7 @@ class AttendanceController extends Controller {
             ->get();
 
         $employees = Employee::query()
-            ->select('id', 'name', 'branch_id')
+            ->select('id', 'employee_number', 'name', 'branch_id')
             ->where('status', 'Aktif')
             ->whereNotNull('branch_id')
             ->when($selectedBranchId, fn ($query) => $query->where('branch_id', $selectedBranchId))
@@ -120,13 +120,91 @@ class AttendanceController extends Controller {
 
         $employeeIds = $employees->pluck('id');
         $attendances = Attendance::query()
-            ->select('id', 'employee_id', 'work_date', 'attendance_type', 'attendance_status', 'check_in', 'check_out')
+            ->select('id', 'employee_id', 'work_date', 'attendance_type', 'attendance_status', 'attendance_note', 'late_minutes', 'check_in', 'check_out')
             ->whereIn('employee_id', $employeeIds)
             ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
         $employeesByBranch = $employees->groupBy('branch_id');
-        $attendancesByBranch = $attendances->groupBy(fn ($attendance) => $employees->firstWhere('id', $attendance->employee_id)?->branch_id);
+        $employeeMap = $employees->keyBy('id');
+        $employeeBranchMap = $employees->pluck('branch_id', 'id');
+        $branchNameMap = $branches->pluck('branch_name', 'id');
+        $attendancesByBranch = $attendances->groupBy(fn ($attendance) => $employeeBranchMap->get($attendance->employee_id));
+        $attendedDateKeys = $attendances
+            ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin']))
+            ->mapWithKeys(fn ($attendance) => [$attendance->employee_id . '-' . $attendance->work_date => true]);
+
+        $notAbsentDetails = collect();
+        $dateCursor = $startDate->copy();
+        while ($dateCursor->lessThanOrEqualTo($endDate)) {
+            $workDate = $dateCursor->toDateString();
+
+            foreach ($employees as $employee) {
+                if (! $attendedDateKeys->has($employee->id . '-' . $workDate)) {
+                    $notAbsentDetails->push([
+                        'branch_id' => $employee->branch_id,
+                        'branch_name' => $branchNameMap->get($employee->branch_id, '-'),
+                        'employee_id' => $employee->id,
+                        'employee_number' => $employee->employee_number,
+                        'employee_name' => $employee->name,
+                        'work_date' => $workDate,
+                    ]);
+                }
+            }
+
+            $dateCursor->addDay();
+        }
+
+        $attendanceDetails = [
+            'on_time' => collect(),
+            'late' => collect(),
+            'sick' => collect(),
+            'permit' => collect(),
+            'incomplete_checkout' => collect(),
+        ];
+
+        foreach ($attendances as $attendance) {
+            $employee = $employeeMap->get($attendance->employee_id);
+
+            if (! $employee) {
+                continue;
+            }
+
+            $detail = [
+                'branch_id' => $employee->branch_id,
+                'branch_name' => $branchNameMap->get($employee->branch_id, '-'),
+                'employee_id' => $employee->id,
+                'employee_number' => $employee->employee_number,
+                'employee_name' => $employee->name,
+                'work_date' => $attendance->work_date,
+                'attendance_type' => $attendance->attendance_type,
+                'attendance_status' => $attendance->attendance_status,
+                'attendance_note' => $attendance->attendance_note,
+                'late_minutes' => $attendance->late_minutes,
+                'check_in' => $attendance->check_in ? Carbon::parse($attendance->check_in)->format('H:i') : null,
+                'check_out' => $attendance->check_out ? Carbon::parse($attendance->check_out)->format('H:i') : null,
+            ];
+
+            if ($attendance->attendance_type === 'Hadir' && $attendance->check_in && $attendance->attendance_status !== 'Terlambat') {
+                $attendanceDetails['on_time']->push($detail);
+            }
+
+            if ($attendance->attendance_status === 'Terlambat') {
+                $attendanceDetails['late']->push($detail);
+            }
+
+            if ($attendance->attendance_type === 'Sakit') {
+                $attendanceDetails['sick']->push($detail);
+            }
+
+            if ($attendance->attendance_type === 'Izin') {
+                $attendanceDetails['permit']->push($detail);
+            }
+
+            if ($attendance->check_in && ! $attendance->check_out) {
+                $attendanceDetails['incomplete_checkout']->push($detail);
+            }
+        }
 
         $branchSummaries = $branches
             ->when($selectedBranchId, fn ($collection) => $collection->where('id', (int) $selectedBranchId))
@@ -195,6 +273,10 @@ class AttendanceController extends Controller {
             ],
             'overall' => $overall,
             'branchSummaries' => $branchSummaries,
+            'notAbsentDetails' => $notAbsentDetails->values(),
+            'attendanceDetails' => collect($attendanceDetails)
+                ->map(fn ($details) => $details->values())
+                ->all(),
             'isBranchAdmin' => (bool) $adminBranchId,
         ]);
     }

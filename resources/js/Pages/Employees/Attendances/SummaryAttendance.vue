@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -25,6 +26,14 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    notAbsentDetails: {
+        type: Array,
+        default: () => [],
+    },
+    attendanceDetails: {
+        type: Object,
+        default: () => ({}),
+    },
     isBranchAdmin: {
         type: Boolean,
         default: false,
@@ -34,14 +43,17 @@ const props = defineProps({
 const selectedBranch = ref(props.selectedBranchId ?? '');
 const startDate = ref(props.period.start_date ?? '');
 const endDate = ref(props.period.end_date ?? '');
+const showDetailModal = ref(false);
+const selectedDetailBranch = ref(null);
+const selectedDetailType = ref('not_absent');
 
 const cards = computed(() => [
     { label: 'Karyawan Aktif', value: props.overall.employee_count || 0, helper: 'Total karyawan dalam cabang terpilih', color: 'from-sky-500 to-sky-600' },
-    { label: 'Tepat Waktu', value: props.overall.on_time || 0, helper: `${props.overall.on_time_percentage || 0}% dari total jadwal`, color: 'from-green-500 to-green-600' },
-    { label: 'Terlambat', value: props.overall.late || 0, helper: `${props.overall.late_percentage || 0}% dari total jadwal`, color: 'from-red-500 to-red-600' },
-    { label: 'Tidak Absen', value: props.overall.not_absent || 0, helper: `${props.overall.not_absent_percentage || 0}% dari total jadwal`, color: 'from-gray-600 to-gray-700' },
-    { label: 'Sakit / Izin', value: (props.overall.sick || 0) + (props.overall.permit || 0), helper: `${props.overall.sick || 0} sakit, ${props.overall.permit || 0} izin`, color: 'from-amber-500 to-amber-600' },
-    { label: 'Belum Absen Keluar', value: props.overall.incomplete_checkout || 0, helper: 'Sudah masuk, belum keluar', color: 'from-purple-500 to-purple-600' },
+    { label: 'Tepat Waktu', type: 'on_time', value: props.overall.on_time || 0, helper: `${props.overall.on_time_percentage || 0}% dari total jadwal`, color: 'from-green-500 to-green-600' },
+    { label: 'Terlambat', type: 'late', value: props.overall.late || 0, helper: `${props.overall.late_percentage || 0}% dari total jadwal`, color: 'from-red-500 to-red-600' },
+    { label: 'Tidak Absen', type: 'not_absent', value: props.overall.not_absent || 0, helper: `${props.overall.not_absent_percentage || 0}% dari total jadwal`, color: 'from-gray-600 to-gray-700' },
+    { label: 'Sakit / Izin', type: 'sick_permit', value: (props.overall.sick || 0) + (props.overall.permit || 0), helper: `${props.overall.sick || 0} sakit, ${props.overall.permit || 0} izin`, color: 'from-amber-500 to-amber-600' },
+    { label: 'Belum Absen Keluar', type: 'incomplete_checkout', value: props.overall.incomplete_checkout || 0, helper: 'Sudah masuk, belum keluar', color: 'from-purple-500 to-purple-600' },
 ]);
 
 const monitoringBars = computed(() => [
@@ -49,6 +61,41 @@ const monitoringBars = computed(() => [
     { label: 'Terlambat', value: props.overall.late_percentage || 0, color: 'bg-red-500' },
     { label: 'Tidak Absen', value: props.overall.not_absent_percentage || 0, color: 'bg-gray-700' },
 ]);
+
+const detailLabels = {
+    on_time: 'Tepat Waktu',
+    late: 'Terlambat',
+    not_absent: 'Tidak Absen',
+    sick: 'Sakit',
+    permit: 'Izin',
+    sick_permit: 'Sakit / Izin',
+    incomplete_checkout: 'Belum Absen Keluar',
+};
+
+const rawSelectedDetails = computed(() => {
+    if (selectedDetailType.value === 'not_absent') {
+        return props.notAbsentDetails;
+    }
+
+    if (selectedDetailType.value === 'sick_permit') {
+        return [
+            ...(props.attendanceDetails.sick || []),
+            ...(props.attendanceDetails.permit || []),
+        ];
+    }
+
+    return props.attendanceDetails[selectedDetailType.value] || [];
+});
+
+const selectedDetails = computed(() => {
+    if (!selectedDetailBranch.value) {
+        return rawSelectedDetails.value;
+    }
+
+    return rawSelectedDetails.value.filter((item) => Number(item.branch_id) === Number(selectedDetailBranch.value.branch_id));
+});
+
+const selectedDetailTitle = computed(() => `${detailLabels[selectedDetailType.value]} - ${selectedDetailBranch.value?.branch_name || 'Semua Cabang'}`);
 
 const applyFilter = () => {
     router.get(route('attendances.summary'), {
@@ -72,6 +119,17 @@ const resetFilter = () => {
     });
 };
 
+const openDetailModal = (type, branch = null) => {
+    selectedDetailType.value = type;
+    selectedDetailBranch.value = branch;
+    showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+    showDetailModal.value = false;
+    selectedDetailBranch.value = null;
+};
+
 const formatDate = (value) => {
     if (!value) return '-';
     return new Intl.DateTimeFormat('id-ID', {
@@ -82,6 +140,8 @@ const formatDate = (value) => {
 };
 
 const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
+
+const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 cursor-default';
 </script>
 
 <template>
@@ -152,7 +212,15 @@ const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
                     :class="['rounded-xl shadow-lg p-5 text-white bg-gradient-to-br', card.color]"
                 >
                     <p class="text-sm font-semibold text-white/80">{{ card.label }}</p>
-                    <p class="text-3xl font-bold mt-2">{{ card.value }}</p>
+                    <button
+                        v-if="card.type"
+                        type="button"
+                        @click="openDetailModal(card.type)"
+                        class="block text-left text-3xl font-bold mt-2 underline decoration-white/50 underline-offset-4 hover:decoration-white"
+                    >
+                        {{ card.value }}
+                    </button>
+                    <p v-else class="text-3xl font-bold mt-2">{{ card.value }}</p>
                     <p class="text-xs text-white/80 mt-2">{{ card.helper }}</p>
                 </div>
             </div>
@@ -211,15 +279,69 @@ const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
                                 <td class="px-4 py-3 whitespace-nowrap font-medium">{{ index + 1 }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900">{{ branch.branch_name }}</td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.employee_count }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.on_time }}</td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('on_time', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.on_time, 'bg-green-600 hover:bg-green-700')"
+                                    >
+                                        {{ branch.on_time }}
+                                    </button>
+                                </td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap text-green-700 font-semibold">{{ formatPercent(branch.on_time_percentage) }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.late }}</td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('late', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.late, 'bg-red-600 hover:bg-red-700')"
+                                    >
+                                        {{ branch.late }}
+                                    </button>
+                                </td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap text-red-700 font-semibold">{{ formatPercent(branch.late_percentage) }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.not_absent }}</td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('not_absent', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.not_absent, 'bg-gray-700 hover:bg-gray-800')"
+                                    >
+                                        {{ branch.not_absent }}
+                                    </button>
+                                </td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap text-gray-900 font-semibold">{{ formatPercent(branch.not_absent_percentage) }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.sick }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.permit }}</td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap">{{ branch.incomplete_checkout }}</td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('sick', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.sick, 'bg-amber-500 hover:bg-amber-600')"
+                                    >
+                                        {{ branch.sick }}
+                                    </button>
+                                </td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('permit', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.permit, 'bg-blue-600 hover:bg-blue-700')"
+                                    >
+                                        {{ branch.permit }}
+                                    </button>
+                                </td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('incomplete_checkout', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.incomplete_checkout, 'bg-purple-600 hover:bg-purple-700')"
+                                    >
+                                        {{ branch.incomplete_checkout }}
+                                    </button>
+                                </td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap">
                                     <span
                                         class="inline-flex min-w-[72px] justify-center rounded-full px-3 py-1 text-xs font-bold"
@@ -236,6 +358,70 @@ const formatPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
                     </table>
                 </div>
             </div>
+
+            <Modal :show="showDetailModal" @close="closeDetailModal">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-5 border-b border-gray-200">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Daftar {{ selectedDetailTitle }}</h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Periode {{ formatDate(period.start_date) }} - {{ formatDate(period.end_date) }}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="closeDetailModal"
+                            class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                    <div class="p-5">
+                        <div class="mb-4 rounded-lg bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
+                            Total data: {{ selectedDetails.length }}
+                        </div>
+                        <div class="max-h-[60vh] overflow-auto border border-gray-200 rounded-lg">
+                            <table class="w-full min-w-[980px] text-sm text-left text-gray-600">
+                                <thead class="sticky top-0 bg-gray-100 text-gray-700 uppercase">
+                                    <tr>
+                                        <th class="px-4 py-3 whitespace-nowrap">No</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Nomor Karyawan</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Cabang</th>
+                                        <th v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">Jenis</th>
+                                        <th v-if="['on_time', 'late', 'incomplete_checkout'].includes(selectedDetailType)" class="px-4 py-3 whitespace-nowrap">Jam Masuk</th>
+                                        <th v-if="selectedDetailType === 'incomplete_checkout'" class="px-4 py-3 whitespace-nowrap">Jam Keluar</th>
+                                        <th v-if="selectedDetailType === 'late'" class="px-4 py-3 whitespace-nowrap">Menit Terlambat</th>
+                                        <th v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="(item, index) in selectedDetails"
+                                        :key="`${item.employee_id}-${item.work_date}`"
+                                        class="border-b border-gray-100 hover:bg-gray-50"
+                                    >
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ index + 1 }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900">{{ formatDate(item.work_date) }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ item.employee_number || '-' }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900">{{ item.employee_name }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap">{{ item.branch_name }}</td>
+                                        <td v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">{{ item.attendance_type || '-' }}</td>
+                                        <td v-if="['on_time', 'late', 'incomplete_checkout'].includes(selectedDetailType)" class="px-4 py-3 whitespace-nowrap">{{ item.check_in || '-' }}</td>
+                                        <td v-if="selectedDetailType === 'incomplete_checkout'" class="px-4 py-3 whitespace-nowrap">{{ item.check_out || '-' }}</td>
+                                        <td v-if="selectedDetailType === 'late'" class="px-4 py-3 whitespace-nowrap">{{ item.late_minutes || 0 }} menit</td>
+                                        <td v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">{{ item.attendance_note || '-' }}</td>
+                                    </tr>
+                                    <tr v-if="selectedDetails.length === 0">
+                                        <td colspan="10" class="px-4 py-10 text-center text-gray-400">Tidak ada data pada periode ini</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </div>
     </AuthenticatedLayout>
 </template>

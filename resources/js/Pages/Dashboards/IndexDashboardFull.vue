@@ -190,6 +190,7 @@
             { label: 'Terlambat', value: summary.late || 0, color: 'from-red-500 to-red-600' },
             { label: 'Sakit', value: summary.sick || 0, color: 'from-yellow-500 to-yellow-600' },
             { label: 'Izin', value: summary.permit || 0, color: 'from-blue-500 to-blue-600' },
+            { label: 'Tugas Luar', value: summary.outside_duty || 0, color: 'from-cyan-500 to-cyan-600' },
             { label: 'Belum Absen Keluar', value: summary.incomplete || 0, color: 'from-purple-500 to-purple-600' },
         ];
     });

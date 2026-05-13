@@ -131,7 +131,7 @@ class AttendanceController extends Controller {
         $branchNameMap = $branches->pluck('branch_name', 'id');
         $attendancesByBranch = $attendances->groupBy(fn ($attendance) => $employeeBranchMap->get($attendance->employee_id));
         $attendedDateKeys = $attendances
-            ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin']))
+            ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin', 'Tugas Luar']))
             ->mapWithKeys(fn ($attendance) => [$attendance->employee_id . '-' . $attendance->work_date => true]);
 
         $notAbsentDetails = collect();
@@ -160,6 +160,7 @@ class AttendanceController extends Controller {
             'late' => collect(),
             'sick' => collect(),
             'permit' => collect(),
+            'outside_duty' => collect(),
             'incomplete_checkout' => collect(),
         ];
 
@@ -191,6 +192,11 @@ class AttendanceController extends Controller {
                 $attendanceDetails['on_time']->push($detail);
             }
 
+            if ($attendance->attendance_type === 'Tugas Luar') {
+                $attendanceDetails['on_time']->push($detail);
+                $attendanceDetails['outside_duty']->push($detail);
+            }
+
             if ($attendance->attendance_status === 'Terlambat') {
                 $attendanceDetails['late']->push($detail);
             }
@@ -216,7 +222,7 @@ class AttendanceController extends Controller {
                 $branchAttendances = $attendancesByBranch->get($branch->id, collect());
                 $totalSlots = $branchEmployees->count() * $days;
                 $attendedSlots = $branchAttendances
-                    ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin']))
+                    ->filter(fn ($attendance) => $attendance->check_in || in_array($attendance->attendance_type, ['Sakit', 'Izin', 'Tugas Luar']))
                     ->unique(fn ($attendance) => $attendance->employee_id . '-' . $attendance->work_date)
                     ->count();
                 $late = $branchAttendances->where('attendance_status', 'Terlambat')->count();
@@ -224,9 +230,11 @@ class AttendanceController extends Controller {
                     ->filter(fn ($attendance) => $attendance->attendance_type === 'Hadir'
                         && $attendance->check_in
                         && $attendance->attendance_status !== 'Terlambat')
-                    ->count();
+                    ->count()
+                    + $branchAttendances->where('attendance_type', 'Tugas Luar')->count();
                 $sick = $branchAttendances->where('attendance_type', 'Sakit')->count();
                 $permit = $branchAttendances->where('attendance_type', 'Izin')->count();
+                $outsideDuty = $branchAttendances->where('attendance_type', 'Tugas Luar')->count();
                 $incompleteCheckout = $branchAttendances
                     ->filter(fn ($attendance) => $attendance->check_in && !$attendance->check_out)
                     ->count();
@@ -241,6 +249,7 @@ class AttendanceController extends Controller {
                     'late' => $late,
                     'sick' => $sick,
                     'permit' => $permit,
+                    'outside_duty' => $outsideDuty,
                     'not_absent' => $notAbsent,
                     'incomplete_checkout' => $incompleteCheckout,
                     'on_time_percentage' => $this->percentage($onTime, $totalSlots),
@@ -257,6 +266,7 @@ class AttendanceController extends Controller {
             'late' => $branchSummaries->sum('late'),
             'sick' => $branchSummaries->sum('sick'),
             'permit' => $branchSummaries->sum('permit'),
+            'outside_duty' => $branchSummaries->sum('outside_duty'),
             'not_absent' => $branchSummaries->sum('not_absent'),
             'incomplete_checkout' => $branchSummaries->sum('incomplete_checkout'),
         ];
@@ -320,7 +330,7 @@ class AttendanceController extends Controller {
     {
         $validated = $request->validate([
             'work_date' => ['required', 'date'],
-            'attendance_type' => ['required', 'in:Sakit,Izin'],
+            'attendance_type' => ['required', 'in:Sakit,Izin,Tugas Luar'],
             'attendance_note' => ['required', 'string'],
         ], [
             'work_date.required' => 'Tanggal wajib diisi.',
@@ -357,7 +367,7 @@ class AttendanceController extends Controller {
             ],
             [
                 'attendance_type' => $validated['attendance_type'],
-                'attendance_status' => $validated['attendance_type'],
+                'attendance_status' => $validated['attendance_type'] === 'Tugas Luar' ? 'Tepat waktu' : $validated['attendance_type'],
                 'attendance_note' => $validated['attendance_note'],
                 'check_in' => null,
                 'check_out' => null,

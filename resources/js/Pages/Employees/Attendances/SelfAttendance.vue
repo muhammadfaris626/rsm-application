@@ -49,7 +49,7 @@ const absenceForm = ref({
 
 const hasCheckedIn = computed(() => Boolean(currentAttendance.value?.check_in));
 const hasCheckedOut = computed(() => Boolean(currentAttendance.value?.check_out));
-const isTodayAbsence = computed(() => ['Sakit', 'Izin'].includes(currentAttendance.value?.attendance_type));
+const isTodayAbsence = computed(() => ['Sakit', 'Izin', 'Tugas Luar'].includes(currentAttendance.value?.attendance_type));
 const actionLabel = computed(() => {
     if (!hasCheckedIn.value) return 'Absen Masuk';
     if (!hasCheckedOut.value) return 'Absen Keluar';
@@ -393,7 +393,7 @@ onBeforeUnmount(stopCamera);
                 </div>
 
                 <div class="bg-white rounded-xl shadow-md p-5">
-                    <h2 class="text-lg font-semibold text-gray-900">Sakit / Izin</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">Sakit / Izin / Tugas Luar</h2>
                     <div class="mt-4 space-y-4">
                         <div>
                             <label class="block mb-1 text-sm font-medium text-gray-700">Tanggal</label>
@@ -412,6 +412,7 @@ onBeforeUnmount(stopCamera);
                                 <option value="">Pilih</option>
                                 <option value="Sakit">Sakit</option>
                                 <option value="Izin">Izin</option>
+                                <option value="Tugas Luar">Tugas Luar</option>
                             </select>
                         </div>
                         <div>
@@ -420,7 +421,7 @@ onBeforeUnmount(stopCamera);
                                 v-model="absenceForm.attendance_note"
                                 rows="4"
                                 class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="Masukkan keterangan sakit atau izin..."
+                                placeholder="Masukkan keterangan sakit, izin, atau tugas luar..."
                             ></textarea>
                         </div>
                         <button

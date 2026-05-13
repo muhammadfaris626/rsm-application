@@ -199,8 +199,12 @@ class DashboardController extends Controller {
             ->withCount([
                 'attendances as present_count' => fn ($query) => $query
                     ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
-                    ->where('attendance_type', 'Hadir')
-                    ->whereNotNull('check_in'),
+                    ->where(function ($query) {
+                        $query->where(function ($query) {
+                            $query->where('attendance_type', 'Hadir')
+                                ->whereNotNull('check_in');
+                        })->orWhere('attendance_type', 'Tugas Luar');
+                    }),
                 'attendances as late_count' => fn ($query) => $query
                     ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
                     ->where('attendance_status', 'Terlambat'),
@@ -210,6 +214,9 @@ class DashboardController extends Controller {
                 'attendances as permit_count' => fn ($query) => $query
                     ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
                     ->where('attendance_type', 'Izin'),
+                'attendances as outside_duty_count' => fn ($query) => $query
+                    ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->where('attendance_type', 'Tugas Luar'),
                 'attendances as incomplete_count' => fn ($query) => $query
                     ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
                     ->whereNotNull('check_in')
@@ -227,6 +234,7 @@ class DashboardController extends Controller {
             'late_count' => $item->late_count,
             'sick_count' => $item->sick_count,
             'permit_count' => $item->permit_count,
+            'outside_duty_count' => $item->outside_duty_count,
             'incomplete_count' => $item->incomplete_count,
             'attention_score' => $item->late_count + $item->sick_count + $item->permit_count + $item->incomplete_count,
         ];
@@ -282,10 +290,12 @@ class DashboardController extends Controller {
                 'end_date' => $endDate->toDateString(),
             ],
             'attendanceSummary' => [
-                'present' => $myAttendances->where('attendance_type', 'Hadir')->whereNotNull('check_in')->count(),
+                'present' => $myAttendances->where('attendance_type', 'Hadir')->whereNotNull('check_in')->count()
+                    + $myAttendances->where('attendance_type', 'Tugas Luar')->count(),
                 'late' => $myAttendances->where('attendance_status', 'Terlambat')->count(),
                 'sick' => $myAttendances->where('attendance_type', 'Sakit')->count(),
                 'permit' => $myAttendances->where('attendance_type', 'Izin')->count(),
+                'outside_duty' => $myAttendances->where('attendance_type', 'Tugas Luar')->count(),
                 'incomplete' => $myAttendances->whereNotNull('check_in')->whereNull('check_out')->count(),
             ],
             'topDiligentEmployees' => $topDiligentEmployees,

@@ -58,6 +58,7 @@ const cards = computed(() => [
     { label: 'Terlambat', type: 'late', value: props.overall.late || 0, helper: `${props.overall.late_percentage || 0}% dari total jadwal`, color: 'from-red-500 to-red-600' },
     { label: 'Tidak Absen', type: 'not_absent', value: props.overall.not_absent || 0, helper: `${props.overall.not_absent_percentage || 0}% dari total jadwal`, color: 'from-gray-600 to-gray-700' },
     { label: 'Sakit / Izin', type: 'sick_permit', value: (props.overall.sick || 0) + (props.overall.permit || 0), helper: `${props.overall.sick || 0} sakit, ${props.overall.permit || 0} izin`, color: 'from-amber-500 to-amber-600' },
+    { label: 'Tugas Luar', type: 'outside_duty', value: props.overall.outside_duty || 0, helper: 'Tetap dihitung tepat waktu', color: 'from-cyan-500 to-cyan-600' },
     { label: 'Belum Absen Keluar', type: 'incomplete_checkout', value: props.overall.incomplete_checkout || 0, helper: 'Sudah masuk, belum keluar', color: 'from-purple-500 to-purple-600' },
 ]);
 
@@ -74,6 +75,7 @@ const detailLabels = {
     sick: 'Sakit',
     permit: 'Izin',
     sick_permit: 'Sakit / Izin',
+    outside_duty: 'Tugas Luar',
     incomplete_checkout: 'Belum Absen Keluar',
 };
 
@@ -230,7 +232,7 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-4">
                 <div
                     v-for="card in cards"
                     :key="card.label"
@@ -291,6 +293,7 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                                 <th class="px-4 py-3 text-center whitespace-nowrap">% Tidak Absen</th>
                                 <th class="px-4 py-3 text-center whitespace-nowrap">Sakit</th>
                                 <th class="px-4 py-3 text-center whitespace-nowrap">Izin</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">Tugas Luar</th>
                                 <th class="px-4 py-3 text-center whitespace-nowrap">Belum Keluar</th>
                                 <th class="px-4 py-3 text-center whitespace-nowrap">Disiplin</th>
                             </tr>
@@ -355,6 +358,16 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                                         :class="countButtonClass(branch.permit, 'bg-blue-600 hover:bg-blue-700')"
                                     >
                                         {{ branch.permit }}
+                                    </button>
+                                </td>
+                                <td class="px-4 py-3 text-center whitespace-nowrap">
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal('outside_duty', branch)"
+                                        class="inline-flex min-w-[44px] justify-center rounded-lg px-3 py-1 font-bold text-white"
+                                        :class="countButtonClass(branch.outside_duty, 'bg-cyan-600 hover:bg-cyan-700')"
+                                    >
+                                        {{ branch.outside_duty }}
                                     </button>
                                 </td>
                                 <td class="px-4 py-3 text-center whitespace-nowrap">

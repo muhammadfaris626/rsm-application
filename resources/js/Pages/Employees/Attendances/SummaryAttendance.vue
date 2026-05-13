@@ -46,6 +46,11 @@ const endDate = ref(props.period.end_date ?? '');
 const showDetailModal = ref(false);
 const selectedDetailBranch = ref(null);
 const selectedDetailType = ref('not_absent');
+const showPhotoModal = ref(false);
+const selectedPhoto = ref({
+    title: '',
+    url: '',
+});
 
 const cards = computed(() => [
     { label: 'Karyawan Aktif', value: props.overall.employee_count || 0, helper: 'Total karyawan dalam cabang terpilih', color: 'from-sky-500 to-sky-600' },
@@ -128,6 +133,26 @@ const openDetailModal = (type, branch = null) => {
 const closeDetailModal = () => {
     showDetailModal.value = false;
     selectedDetailBranch.value = null;
+};
+
+const photoUrl = (path) => path ? `/storage/${path}` : '';
+
+const openPhoto = (title, path) => {
+    if (!path) return;
+
+    selectedPhoto.value = {
+        title,
+        url: photoUrl(path),
+    };
+    showPhotoModal.value = true;
+};
+
+const closePhoto = () => {
+    showPhotoModal.value = false;
+    selectedPhoto.value = {
+        title: '',
+        url: '',
+    };
 };
 
 const formatDate = (value) => {
@@ -394,6 +419,7 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                                         <th v-if="selectedDetailType === 'incomplete_checkout'" class="px-4 py-3 whitespace-nowrap">Jam Keluar</th>
                                         <th v-if="selectedDetailType === 'late'" class="px-4 py-3 whitespace-nowrap">Menit Terlambat</th>
                                         <th v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">Keterangan</th>
+                                        <th v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 text-center whitespace-nowrap">Foto Selfie</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -412,6 +438,26 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                                         <td v-if="selectedDetailType === 'incomplete_checkout'" class="px-4 py-3 whitespace-nowrap">{{ item.check_out || '-' }}</td>
                                         <td v-if="selectedDetailType === 'late'" class="px-4 py-3 whitespace-nowrap">{{ item.late_minutes || 0 }} menit</td>
                                         <td v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">{{ item.attendance_note || '-' }}</td>
+                                        <td v-if="selectedDetailType !== 'not_absent'" class="px-4 py-3 whitespace-nowrap">
+                                            <div class="flex flex-nowrap justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    @click="openPhoto(`Foto Masuk - ${item.employee_name}`, item.check_in_photo)"
+                                                    :disabled="!item.check_in_photo"
+                                                    class="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded"
+                                                >
+                                                    Masuk
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    @click="openPhoto(`Foto Keluar - ${item.employee_name}`, item.check_out_photo)"
+                                                    :disabled="!item.check_out_photo"
+                                                    class="px-3 py-1.5 text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded"
+                                                >
+                                                    Keluar
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                     <tr v-if="selectedDetails.length === 0">
                                         <td colspan="10" class="px-4 py-10 text-center text-gray-400">Tidak ada data pada periode ini</td>
@@ -419,6 +465,29 @@ const countButtonClass = (value, color) => value > 0 ? color : 'bg-gray-300 curs
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal :show="showPhotoModal" @close="closePhoto">
+                <div class="relative w-full max-w-3xl bg-white rounded-lg shadow">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ selectedPhoto.title }}</h3>
+                        <button
+                            type="button"
+                            @click="closePhoto"
+                            class="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <img
+                            v-if="selectedPhoto.url"
+                            :src="selectedPhoto.url"
+                            :alt="selectedPhoto.title"
+                            class="w-full max-h-[70vh] object-contain rounded-lg bg-gray-100"
+                        >
                     </div>
                 </div>
             </Modal>

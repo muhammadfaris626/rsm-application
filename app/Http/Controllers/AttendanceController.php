@@ -120,7 +120,7 @@ class AttendanceController extends Controller {
 
         $employeeIds = $employees->pluck('id');
         $attendances = Attendance::query()
-            ->select('id', 'employee_id', 'work_date', 'attendance_type', 'attendance_status', 'attendance_note', 'late_minutes', 'check_in', 'check_out')
+            ->select('id', 'employee_id', 'work_date', 'attendance_type', 'attendance_status', 'attendance_note', 'late_minutes', 'check_in', 'check_out', 'check_in_photo', 'check_out_photo')
             ->whereIn('employee_id', $employeeIds)
             ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
@@ -183,6 +183,8 @@ class AttendanceController extends Controller {
                 'late_minutes' => $attendance->late_minutes,
                 'check_in' => $attendance->check_in ? Carbon::parse($attendance->check_in)->format('H:i') : null,
                 'check_out' => $attendance->check_out ? Carbon::parse($attendance->check_out)->format('H:i') : null,
+                'check_in_photo' => $attendance->check_in_photo,
+                'check_out_photo' => $attendance->check_out_photo,
             ];
 
             if ($attendance->attendance_type === 'Hadir' && $attendance->check_in && $attendance->attendance_status !== 'Terlambat') {

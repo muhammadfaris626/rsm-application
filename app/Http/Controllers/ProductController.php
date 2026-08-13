@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ProductStockExport;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductCategoryResource;
 use App\Http\Resources\ProductResource;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
 {
@@ -77,6 +79,16 @@ class ProductController extends Controller
     public function create()
     {
         //
+    }
+
+    public function export(): BinaryFileResponse
+    {
+        Gate::authorize('viewAny', Product::class);
+
+        return Excel::download(
+            new ProductStockExport,
+            'data-barang-'.now()->format('Y-m-d').'.xlsx'
+        );
     }
 
     public function store(ProductRequest $request): RedirectResponse {

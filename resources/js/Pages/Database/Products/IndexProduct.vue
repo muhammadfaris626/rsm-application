@@ -157,6 +157,10 @@
             console.error('Gagal mengunduh file: ', error);
         }
     }
+
+    const exportData = () => {
+        window.location.href = route('products.export');
+    }
 </script>
 
 <template>
@@ -199,6 +203,15 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2">
+                        <button
+                            @click="exportData"
+                            class="px-4 py-2.5 text-sm font-semibold text-white inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg shadow-md hover:shadow-lg transform transition-all duration-200 hover:scale-105"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M12 3v13.5m0 0 4.5-4.5M12 16.5 7.5 12" />
+                            </svg>
+                            Export Data
+                        </button>
                         <template v-if="hasPermission('product: create')">
                             <button 
                                 @click="downloadFile" 

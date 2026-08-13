@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/employees', EmployeeController::class);
         Route::resource('/productCategories', ProductCategoryController::class);
         Route::post('/productCategoryUpload', [ProductCategoryController::class, 'upload'])->name('productCategory.upload');
+        Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
         Route::resource('/products', ProductController::class);
         Route::post('/productUpload', [ProductController::class, 'upload'])->name('product.upload');
         Route::resource('/expenditures', ExpenditureController::class);

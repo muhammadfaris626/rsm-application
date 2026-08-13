@@ -107,7 +107,7 @@ class RequestReturnController extends Controller {
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = RequestReturnResource::collection($searchQuery->paginate(12));
+        $data = RequestReturnResource::collection($searchQuery->paginate(12)->withQueryString());
         
         return Inertia::render('Products/RequestReturns/IndexRequestReturn', [
             'fetchData' => $data,

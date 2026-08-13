@@ -58,7 +58,9 @@ class ProductController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = ProductResource::collection($searchQuery->paginate(12));
+        $data = ProductResource::collection(
+            $searchQuery->paginate(12)->withQueryString()
+        );
         
         // Cache product categories
         $productCategories = Cache::remember('product_categories', 600, function() {

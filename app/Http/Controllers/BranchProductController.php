@@ -58,7 +58,7 @@ class BranchProductController extends Controller
 
         $this->applySearch($searchQuery, $request->search);
 
-        $data = $searchQuery->paginate(12);
+        $data = $searchQuery->paginate(12)->withQueryString();
         
         return Inertia::render('Products/BranchProducts/IndexBranchProduct', [
             'fetchData' => [

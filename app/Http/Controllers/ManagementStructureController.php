@@ -66,7 +66,7 @@ class ManagementStructureController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = ManagementStructureResource::collection($searchQuery->paginate(12));
+        $data = ManagementStructureResource::collection($searchQuery->paginate(12)->withQueryString());
 
         // Use cached data
         $employees = $this->getCachedActiveEmployees();

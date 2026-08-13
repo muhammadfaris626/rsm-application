@@ -59,7 +59,7 @@ class OperationalCenterController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = OperationalCenterResource::collection($searchQuery->paginate(12));
+        $data = OperationalCenterResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Use cached expenditures
         $expenditures = $this->getCachedExpenditures();

@@ -33,7 +33,7 @@ class SupplierController extends Controller
             ->with('updateSupplierHistory.user')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = SupplierResource::collection($searchQuery->paginate(12));
+        $data = SupplierResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Database/Suppliers/IndexSupplier', [
             'fetchData' => $data,
             'search' => $request->search ?? ''

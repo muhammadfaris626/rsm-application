@@ -28,7 +28,7 @@ class ApprovalTypeController extends Controller
             ->with('updateApprovalTypeHistory.user')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = ApprovalTypeResource::collection($searchQuery->paginate(12));
+        $data = ApprovalTypeResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Settings/ApprovalTypes/IndexApprovalType', [
             'fetchData' => $data,
             'search' => $request->search ?? ''

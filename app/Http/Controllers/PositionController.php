@@ -28,7 +28,7 @@ class PositionController extends Controller
             ->with('updatePositionHistory.user')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = PositionResource::collection($searchQuery->paginate(12));
+        $data = PositionResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Database/Positions/IndexPosition', [
             'fetchData' => $data,
             'search' => $request->search ?? ''

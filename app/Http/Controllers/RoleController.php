@@ -35,7 +35,7 @@ class RoleController extends Controller {
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = RoleResource::collection($searchQuery->paginate(12));
+        $data = RoleResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Cache permissions
         $permissions = Cache::remember('all_permissions', 600, function() {

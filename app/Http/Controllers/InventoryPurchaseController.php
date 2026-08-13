@@ -54,7 +54,7 @@ class InventoryPurchaseController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = InventoryPurchaseResource::collection($searchQuery->paginate(12));
+        $data = InventoryPurchaseResource::collection($searchQuery->paginate(12)->withQueryString());
         
         return Inertia::render('Products/InventoryPurchases/IndexInventoryPurchase', [
             'fetchData' => $data,

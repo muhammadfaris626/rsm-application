@@ -40,7 +40,7 @@ class UserController extends Controller {
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = UserResource::collection($searchQuery->paginate(12));
+        $data = UserResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Use cached roles
         $roles = $this->getCachedRoles();

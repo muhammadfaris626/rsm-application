@@ -40,7 +40,7 @@ class ApiLocationController extends Controller
         
         $this->applySearch($query, $request->search);
         $perPage = $request->get('per_page', 12);
-        $locations = $query->paginate($perPage);
+        $locations = $query->paginate($perPage)->withQueryString();
         
         return response()->json([
             'data' => LocationResource::collection($locations)->response()->getData(true),

@@ -81,7 +81,7 @@ class EmployeeController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = EmployeeResource::collection($searchQuery->paginate(12));
+        $data = EmployeeResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Use cached branches
         $branches = $this->getCachedActiveBranches();

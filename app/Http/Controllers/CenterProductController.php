@@ -40,7 +40,7 @@ class CenterProductController extends Controller
             ]);
         
         $this->applySearch($searchQuery, $request->search);
-        $data = CenterProductResource::collection($searchQuery->paginate(12));
+        $data = CenterProductResource::collection($searchQuery->paginate(12)->withQueryString());
         
         return Inertia::render('Products/CenterProducts/IndexCenterProduct', [
             'fetchData' => $data,

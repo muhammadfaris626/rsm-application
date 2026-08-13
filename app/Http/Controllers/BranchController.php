@@ -42,7 +42,7 @@ class BranchController extends Controller
             ->orderBy('id', 'desc');
         
         $this->applySearch($searchQuery, $request->search);
-        $data = BranchResource::collection($searchQuery->paginate(12));
+        $data = BranchResource::collection($searchQuery->paginate(12)->withQueryString());
         
         return Inertia::render('Database/Branches/IndexBranch', [
             'fetchData' => $data,

@@ -54,7 +54,7 @@ class ApiEmployeeAttendanceController extends Controller {
         
         $this->applySearch($query, $request->search);
         $perPage = $request->get('per_page', 12);
-        $data = $query->paginate($perPage);
+        $data = $query->paginate($perPage)->withQueryString();
         
         return response()->json([
             'data' => EmployeeResource::collection($data)->response()->getData(true)

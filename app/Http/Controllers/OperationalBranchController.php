@@ -95,7 +95,7 @@ class OperationalBranchController extends Controller
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
-        $data = OperationalBranchResource::collection($searchQuery->paginate(12));
+        $data = OperationalBranchResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Use cached data
         $expenditures = $this->getCachedExpenditures();

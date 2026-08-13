@@ -34,7 +34,7 @@ class ProductCategoryController extends Controller
             ->with('updateProductCategoryHistory.user')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = ProductCategoryResource::collection($searchQuery->paginate(12));
+        $data = ProductCategoryResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Database/ProductCategories/IndexProductCategory', [
             'fetchData' => $data,
             'search' => $request->search ?? '',

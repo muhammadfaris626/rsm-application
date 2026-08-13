@@ -35,7 +35,7 @@ class PermissionController extends Controller {
         Gate::authorize('viewAny', Permission::class);
         $searchQuery = Permission::query()->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = PermissionResource::collection($searchQuery->paginate(12));
+        $data = PermissionResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Settings/Permissions/IndexPermission', [
             'fetchData' => $data,
             'search' => $request->search ?? ''

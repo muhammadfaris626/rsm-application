@@ -28,7 +28,7 @@ class ExpenditureController extends Controller
             ->with('updateExpenditureHistory.user')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
-        $data = ExpenditureResource::collection($searchQuery->paginate(12));
+        $data = ExpenditureResource::collection($searchQuery->paginate(12)->withQueryString());
         return Inertia::render('Database/Expenditures/IndexExpenditure', [
             'fetchData' => $data,
             'search' => $request->search ?? ''

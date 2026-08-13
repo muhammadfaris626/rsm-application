@@ -82,7 +82,7 @@ class SaleController extends Controller
         
         $this->applySearch($searchQuery, $request->search);
         
-        $data = SaleResource::collection($searchQuery->paginate(12));
+        $data = SaleResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Cache branches for filter
         $branches = Cache::remember("branches_for_user_{$user->id}", 300, function() use ($isCentralUser, $employee) {

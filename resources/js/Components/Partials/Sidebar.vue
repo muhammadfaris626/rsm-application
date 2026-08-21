@@ -231,7 +231,8 @@
                     </button>
                     <ul id="management" class="py-2"
                         :class="{ hidden: !isRouteActive([
-                                'managementStructures.index', 'reports.index', 'reportBranches.index'
+                                'managementStructures.index', 'reports.index', 'reportBranches.index',
+                                'branchStockReports.index', 'centerStockReports.index'
                             ]) }"
                     >
                         <template v-if="hasPermission('report-branch: menu')">
@@ -240,11 +241,21 @@
                                     Laporan Cabang
                                 </SidebarLink>
                             </li>
+                            <li>
+                                <SidebarLink :href="route('branchStockReports.index')" :active="isRouteActive(['branchStockReports.index'])">
+                                    Laporan Barang Cabang
+                                </SidebarLink>
+                            </li>
                         </template>
                         <template v-if="hasPermission('report: menu')">
                             <li>
                                 <SidebarLink :href="route('reports.index')" :active="isRouteActive(['reports.index'])">
                                     Laporan
+                                </SidebarLink>
+                            </li>
+                            <li>
+                                <SidebarLink :href="route('centerStockReports.index')" :active="isRouteActive(['centerStockReports.index'])">
+                                    Laporan Barang Pusat
                                 </SidebarLink>
                             </li>
                         </template>

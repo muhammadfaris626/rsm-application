@@ -5,7 +5,9 @@ use App\Http\Controllers\ApprovalTypeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BranchProductController;
+use App\Http\Controllers\BranchStockReportController;
 use App\Http\Controllers\CenterProductController;
+use App\Http\Controllers\CenterStockReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenditureController;
@@ -30,7 +32,6 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TerminationController;
 use App\Http\Controllers\UserController;
-use App\Http\Middleware\InjectSidebarMenu;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,7 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::prefix('/products')->group(function() {
+    Route::prefix('/products')->group(function () {
         Route::resource('/sales', SaleController::class);
         Route::resource('/inventoryPurchases', InventoryPurchaseController::class);
         Route::get('/printBarcode', [InventoryPurchaseController::class, 'printBarcode'])->name('printBarcode');
@@ -53,11 +54,17 @@ Route::middleware('auth')->group(function () {
         Route::resource('/branchProducts', BranchProductController::class);
         Route::resource('/centerProducts', CenterProductController::class);
     });
-    Route::prefix('/operational')->group(function() {
+    Route::prefix('/operational')->group(function () {
         Route::resource('/operationalCenters', OperationalCenterController::class);
         Route::resource('/operationalBranches', OperationalBranchController::class);
     });
-    Route::prefix('/management')->group(function() {
+    Route::prefix('/management')->group(function () {
+        Route::get('/branch-stock-reports', [BranchStockReportController::class, 'index'])->name('branchStockReports.index');
+        Route::get('/branch-stock-reports/excel', [BranchStockReportController::class, 'excel'])->name('branchStockReports.excel');
+        Route::get('/branch-stock-reports/pdf', [BranchStockReportController::class, 'pdf'])->name('branchStockReports.pdf');
+        Route::get('/center-stock-reports', [CenterStockReportController::class, 'index'])->name('centerStockReports.index');
+        Route::get('/center-stock-reports/excel', [CenterStockReportController::class, 'excel'])->name('centerStockReports.excel');
+        Route::get('/center-stock-reports/pdf', [CenterStockReportController::class, 'pdf'])->name('centerStockReports.pdf');
         Route::resource('/reports', ReportController::class);
         Route::resource('/reportBranches', ReportBranchController::class);
         Route::get('/cetak', [ReportController::class, 'cetak'])->name('cetak');
@@ -66,7 +73,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/exportBranch', [ReportBranchController::class, 'export'])->name('exportBranch');
         Route::resource('/managementStructures', ManagementStructureController::class);
     });
-    Route::prefix('/employee')->group(function() {
+    Route::prefix('/employee')->group(function () {
         Route::get('/my-attendance', [AttendanceController::class, 'selfAttendance'])->name('attendances.self');
         Route::post('/my-attendance/absence', [AttendanceController::class, 'submitAbsence'])->name('attendances.absence');
         Route::get('/attendances/summary', [AttendanceController::class, 'summary'])->name('attendances.summary');
@@ -75,7 +82,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/mutations', MutationController::class);
         Route::resource('/terminations', TerminationController::class);
     });
-    Route::prefix('/database')->group(function() {
+    Route::prefix('/database')->group(function () {
         Route::resource('/branches', BranchController::class);
         Route::post('/branchUpload', [BranchController::class, 'upload'])->name('branch.upload');
         Route::resource('/employees', EmployeeController::class);
@@ -89,7 +96,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/suppliers', SupplierController::class);
         Route::resource('/locations', LocationController::class);
     });
-    Route::prefix('/settings')->group(function() {
+    Route::prefix('/settings')->group(function () {
         Route::resource('/users', UserController::class);
         Route::resource('/roles', RoleController::class);
         Route::post('/roles/role/{role_id}/permission/{permission_id}', [RoleController::class, 'updateRolePermission'])->name('updateRolePermission');

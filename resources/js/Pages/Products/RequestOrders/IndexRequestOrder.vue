@@ -214,7 +214,9 @@
     const page = usePage();
     const userRoles = page.props.auth.user.roles;
     const userBranchId = page.props.userBranch;
-    const isCentralUser = computed(() => userRoles.includes("root") || userRoles.includes("admin-pusat"));
+    const isRoot = computed(() => userRoles.includes("root"));
+    const isCentralAdmin = computed(() => userRoles.includes("admin-pusat"));
+    const isCentralUser = computed(() => isRoot.value || isCentralAdmin.value);
     const approvalOptions = computed(() => {
         const optionsMap = {
             "Sedang diverifikasi": ["Disetujui"],
@@ -226,10 +228,14 @@
         return optionsMap[form.status] || [];
     });
     const canViewSelect = computed(() => {
-        const rootAdminStatuses = ["Sedang diverifikasi", "Disetujui"];
+        const centralAdminStatuses = ["Sedang diverifikasi", "Disetujui"];
         const branchStatuses = ["Pengiriman barang", "Tiba di lokasi", "Pengecekan barang"];
-        if (isCentralUser.value) {
-            return rootAdminStatuses.includes(form.status);
+
+        if (isRoot.value) {
+            return approvalOptions.value.length > 0;
+        }
+        if (isCentralAdmin.value) {
+            return centralAdminStatuses.includes(form.status);
         }
         if (userRoles.includes("admin-branch")) {
             return branchStatuses.includes(form.status) && userBranchId === firstItem(form.branch_id)?.id;

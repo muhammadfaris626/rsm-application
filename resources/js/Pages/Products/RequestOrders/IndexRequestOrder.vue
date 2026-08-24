@@ -242,6 +242,12 @@
         }
         return false;
     });
+    const deliveryNoteStatuses = [
+        "Pengiriman barang",
+        "Tiba di lokasi",
+        "Pengecekan barang",
+        "Selesai"
+    ];
 </script>
 
 <template>
@@ -367,6 +373,20 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                             </svg>
                                         </button>
+                                    </template>
+                                    <!-- Cetak Surat Jalan -->
+                                    <template v-if="hasPermission('request-order: read') && deliveryNoteStatuses.includes(data.status)">
+                                        <a
+                                            :href="route('requestOrders.deliveryNote', data.id)"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 focus:ring-4 focus:outline-none focus:ring-amber-300 font-medium rounded-lg text-sm p-2 text-center inline-flex items-center shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-110"
+                                            title="Cetak Surat Jalan"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3h7.5L18 6.75V9m-11.25-6v6m7.5-6v3.75H18M6.75 15h10.5m-10.5 3h7.5M5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5A2.25 2.25 0 0 1 18.75 21H5.25A2.25 2.25 0 0 1 3 18.75v-7.5A2.25 2.25 0 0 1 5.25 9Z" />
+                                            </svg>
+                                        </a>
                                     </template>
                                     <!-- Ubah Data  -->
                                     <template v-if="hasPermission('request-order: update') && data.status =='Sedang diverifikasi'">

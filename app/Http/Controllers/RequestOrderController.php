@@ -15,6 +15,8 @@ use App\Models\Product;
 use App\Models\RequestOrder;
 use App\Models\RequestOrderLog;
 use App\Models\UpdateRequestOrderHistory;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class RequestOrderController extends Controller {
 
@@ -221,6 +224,68 @@ class RequestOrderController extends Controller {
 
     public function show(RequestOrder $requestOrder) {
 
+    }
+
+    public function deliveryNote(RequestOrder $requestOrder): HttpResponse {
+        Gate::authorize('view', $requestOrder);
+        $this->authorizeDeliveryNoteBranch($requestOrder);
+
+        abort_unless(in_array($requestOrder->status, [
+            'Pengiriman barang',
+            'Tiba di lokasi',
+            'Pengecekan barang',
+            'Selesai',
+        ], true), 409, 'Surat jalan hanya dapat dicetak setelah proses pengiriman dimulai.');
+
+        $requestOrder->load([
+            'branch:id,branch_name,branch_address',
+            'listRequestOrder.centerStock.product:id,product_name',
+            'requestOrderLog' => fn($query) => $query
+                ->with('user:id,name')
+                ->where('status', 'Pengiriman barang')
+                ->oldest('id'),
+        ]);
+
+        $shippingLog = $requestOrder->requestOrderLog->first();
+        $shippingDate = Carbon::parse($shippingLog?->created_at ?? $requestOrder->updated_at);
+        $deliveryNoteNumber = 'SJ-RSM-' . $shippingDate->format('mdY') . '-' . str_pad((string) $requestOrder->id, 4, '0', STR_PAD_LEFT);
+        $items = $requestOrder->listRequestOrder->map(fn(ListRequestOrder $item) => [
+            'description' => $item->centerStock?->product?->product_name ?? '-',
+            'quantity' => (int) ($item->approved_quantity ?? $item->quantity),
+            'unit' => 'PCS',
+            'notes' => '',
+        ]);
+
+        $dompdf = new Dompdf(['isRemoteEnabled' => false]);
+        $dompdf->loadHtml(view('request-orders.delivery-note', [
+            'requestOrder' => $requestOrder,
+            'deliveryNoteNumber' => $deliveryNoteNumber,
+            'shippingDate' => $shippingDate->locale('id')->translatedFormat('d F Y'),
+            'senderName' => $shippingLog?->user?->name,
+            'items' => $items,
+        ])->render());
+        $dompdf->setPaper('letter', 'portrait');
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="surat-jalan-' . $deliveryNoteNumber . '.pdf"',
+        ]);
+    }
+
+    private function authorizeDeliveryNoteBranch(RequestOrder $requestOrder): void {
+        $user = Auth::user();
+        if ($user->hasRole(['root', 'admin-pusat'])) {
+            return;
+        }
+
+        $employee = Employee::query()
+            ->select('id', 'branch_id', 'employee_number', 'user_id')
+            ->where('user_id', $user->id)
+            ->orWhere('employee_number', $user->username)
+            ->first();
+
+        abort_if(!$employee || (int) $employee->branch_id !== (int) $requestOrder->branch_id, 403);
     }
 
     public function edit(RequestOrder $requestOrder): Response {

@@ -62,6 +62,9 @@
   "resources/js/Components/PrimaryButton.vue": [
     "/build/assets/PrimaryButton-CqW5HCNI.js"
   ],
+  "resources/js/Components/RequestOrderProductCard.vue": [
+    "/build/assets/RequestOrderProductCard-B0mzujMS.js"
+  ],
   "resources/js/Components/SecondaryButton.vue": [
     "/build/assets/DeleteUserForm-CZV1EmUW.js"
   ],
@@ -280,11 +283,11 @@
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/CreateRequestOrder.vue": [
-    "/build/assets/CreateRequestOrder-D-vMvokk.js",
+    "/build/assets/CreateRequestOrder-B1sE_efZ.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/EditRequestOrder.vue": [
-    "/build/assets/EditRequestOrder--fZ3n1Kl.js",
+    "/build/assets/EditRequestOrder-CnL5gQQO.js",
     "/build/assets/vue-multiselect-DIn9qltL.css"
   ],
   "resources/js/Pages/Products/RequestOrders/IndexRequestOrder.vue": [

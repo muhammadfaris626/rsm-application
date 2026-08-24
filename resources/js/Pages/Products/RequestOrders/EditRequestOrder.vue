@@ -7,6 +7,7 @@
     import TextInput from "@/Components/TextInput.vue";
     import Textarea from '@/Components/Textarea.vue';
     import VueMultiselect from "vue-multiselect";
+    import RequestOrderProductCard from '@/Components/RequestOrderProductCard.vue';
 
     const props = defineProps({
         requestOrder: {
@@ -192,7 +193,7 @@
             <div class="pt-4">
                 <h1 class="text-xl font-semibold text-blue-600">UBAH PERMINTAAN STOK</h1>
                 <form @submit.prevent="form.put(route('requestOrders.update', form.id))">
-                    <div class="grid grid-cols-3 gap-2 mt-2 bg-white p-4 rounded-xl">
+                    <div class="mt-2 grid grid-cols-1 gap-4 rounded-xl bg-white p-4 md:grid-cols-3">
                         <div>
                             <InputLabel for="ro_number" value="Nomor Permintaan" />
                             <TextInput
@@ -229,121 +230,38 @@
 
                     </div>
                     <template v-if="selectedBranchId">
-                    <h1 class="text-xl font-semibold text-blue-600 my-2">UBAH BARANG</h1>
-                    <div class="bg-white p-4 rounded-xl">
-                        <div v-if="form.products.length > 0" class="relative flex flex-col rounded-lg bg-white shadow-sm border border-slate-200 mb-4">
-                            <div class="flex flex-col gap-1 p-1.5">
-                                <div v-for="(product, index) in form.products" :key="index">
-                                    <div class="text-slate-800 flex w-full items-center rounded-md p-2 pl-3 transition-all">
-                                        <h1 class="mr-2 text-lg font-semibold">{{ index+1 }}.</h1>
-                                        <div class="grid grid-cols-12 gap-2 w-full items-start">
-                                            <div class="col-span-12 md:col-span-3">
-                                                <InputLabel :for="'product_id_' + index" value="Barang" />
-                                                <VueMultiselect
-                                                    :id="'product_id_' + index"
-                                                    class="bg-white"
-                                                    v-model="product.product_id"
-                                                    :options="formattedProducts"
-                                                    :close-on-select="true"
-                                                    placeholder="Pilih Barang"
-                                                    label="label"
-                                                    track-by="id"
-                                                    @select="selected => resetProductStocks(product, selected)"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.product_id']" />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'branch_stock_' + index" value="Stok Cabang" />
-                                                <TextInput
-                                                    :id="'branch_stock_' + index"
-                                                    type="number"
-                                                    class="block w-full bg-slate-100"
-                                                    :model-value="branchStockFor(product)"
-                                                    disabled
-                                                />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'initial_stock_' + index" value="Sisa Stok" />
-                                                <TextInput
-                                                    :id="'initial_stock_' + index"
-                                                    type="number"
-                                                    min="0"
-                                                    class="block w-full bg-white"
-                                                    v-model="product.initial_stock"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.initial_stock']" />
-                                                <p v-if="hasInvalidStock(product)" class="mt-1 text-xs text-red-600">Sisa stok + rusak melebihi stok cabang.</p>
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'used_quantity_' + index" value="Terpakai" />
-                                                <TextInput
-                                                    :id="'used_quantity_' + index"
-                                                    type="number"
-                                                    class="block w-full bg-slate-100"
-                                                    :model-value="usedStockFor(product)"
-                                                    disabled
-                                                />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'damaged_quantity_' + index" value="Rusak" />
-                                                <TextInput
-                                                    :id="'damaged_quantity_' + index"
-                                                    type="number"
-                                                    min="0"
-                                                    class="block w-full bg-white"
-                                                    v-model="product.damaged_quantity"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.damaged_quantity']" />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'quantity_' + index" value="Request" />
-                                                <TextInput
-                                                    :id="'quantity_' + index"
-                                                    type="number"
-                                                    min="1"
-                                                    class="block w-full bg-white"
-                                                    placeholder="Jumlah"
-                                                    v-model="product.quantity"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.quantity']" />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'final_stock_' + index" value="Stok Akhir" />
-                                                <TextInput
-                                                    :id="'final_stock_' + index"
-                                                    type="number"
-                                                    class="block w-full bg-slate-100"
-                                                    :model-value="finalStockFor(product)"
-                                                    disabled
-                                                />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-3 text-xs text-gray-500 pt-6">
-                                                Stok pusat: <span class="font-semibold">{{ product.product_id?.stock ?? 0 }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-2 grid place-items-center justify-self-end">
-                                            <button @click="removeProduct(index)" class="rounded-md border border-transparent p-2.5 text-center text-sm transition-all bg-red-500 text-white hover:bg-red-600 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none" type="button">
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-                                                    <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <h1 class="my-3 text-lg font-semibold text-blue-600 sm:text-xl">UBAH BARANG</h1>
+                    <div class="rounded-xl bg-white p-3 sm:p-4">
+                        <div v-if="form.products.length > 0" class="mb-4 space-y-4">
+                            <RequestOrderProductCard
+                                v-for="(product, index) in form.products"
+                                :key="index"
+                                :product="product"
+                                :index="index"
+                                :options="formattedProducts"
+                                :branch-stock="branchStockFor(product)"
+                                :used-stock="usedStockFor(product)"
+                                :final-stock="finalStockFor(product)"
+                                :invalid-stock="hasInvalidStock(product)"
+                                :errors="form.errors"
+                                @select="selected => resetProductStocks(product, selected)"
+                                @remove="removeProduct(index)"
+                            />
                         </div>
-                        <div v-if="selectedBranchId" class="flex-flex-row-reverse space-x-4 space-x-reverse justify-center">
-                            <div class="text-center">
-                                <button @click="addProduct" type="button" class="px-5 py-2 text-sm font-medium text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-center">
-                                    Tambah Barang
-                                </button>
-                            </div>
+                        <div v-else class="mb-4 rounded-xl border-2 border-dashed border-slate-200 px-4 py-8 text-center">
+                            <p class="font-medium text-slate-600">Belum ada barang</p>
+                            <p class="mt-1 text-sm text-slate-500">Tambahkan barang untuk mulai membuat permintaan stok.</p>
+                        </div>
+                        <div v-if="selectedBranchId" class="flex justify-center">
+                            <button @click="addProduct" type="button" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 sm:w-auto">
+                                + Tambah Barang
+                            </button>
                         </div>
                     </div>
                     </template>
-                    <div class="mt-6">
-                        <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">UBAH</button>
-                        <Link :href="route('requestOrders.index')" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800">KEMBALI</Link>
+                    <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
+                        <Link :href="route('requestOrders.index')" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200">KEMBALI</Link>
+                        <button type="submit" class="min-h-11 rounded-lg bg-blue-700 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300">UBAH</button>
                     </div>
                 </form>
             </div>

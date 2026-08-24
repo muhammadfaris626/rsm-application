@@ -55,7 +55,7 @@
         form.products.push({
             product_id: "",
             quantity: "",
-            initial_stock: 0,
+            initial_stock: "",
             used_quantity: 0,
             damaged_quantity: 0,
             final_stock: 0,
@@ -94,29 +94,36 @@
         if (!selectedBranchId.value || !productId) return 0;
         return branchStockMap.value.get(`${selectedBranchId.value}-${productId}`) ?? 0;
     };
-    const finalStockFor = (product) => {
-        return toNumber(product.initial_stock)
-            + toNumber(product.quantity)
-            - toNumber(product.used_quantity)
-            - toNumber(product.damaged_quantity);
-    };
+    const usedStockFor = (product) => branchStockFor(product)
+        - toNumber(product.initial_stock)
+        - toNumber(product.damaged_quantity);
+    const finalStockFor = (product) => branchStockFor(product)
+        - usedStockFor(product)
+        - toNumber(product.damaged_quantity);
+    const hasInvalidStock = (product) => usedStockFor(product) < 0;
     const syncStockReport = () => {
         form.products.forEach((product) => {
             const selectedProduct = formattedProducts.value.find(p => p.id === product.product_id?.id);
             product.stock = selectedProduct ? selectedProduct.stock : 0;
-            product.initial_stock = branchStockFor(product);
+            product.used_quantity = usedStockFor(product);
             product.final_stock = finalStockFor(product);
         });
+    };
+    const resetProductStocks = (product, selectedProduct) => {
+        product.product_id = selectedProduct;
+        product.initial_stock = "";
+        product.damaged_quantity = 0;
+        syncStockReport();
     };
 
     watch(
         () => [
             selectedBranchId.value,
             form.products.map(product => product.product_id?.id).join(','),
-            form.products.map(product => `${product.quantity}|${product.used_quantity}|${product.damaged_quantity}`).join(',')
+            form.products.map(product => `${product.initial_stock}|${product.damaged_quantity}`).join(',')
         ],
         syncStockReport,
-        { deep: true }
+        { deep: true, immediate: true }
     );
 
     watch(selectedBranchId, (branchId) => {
@@ -241,24 +248,59 @@
                                                     placeholder="Pilih Barang"
                                                     label="label"
                                                     track-by="id"
+                                                    @select="selected => resetProductStocks(product, selected)"
                                                 />
                                                 <InputError class="mt-2" :message="form.errors['products.' + index + '.product_id']" />
                                             </div>
-                                            <div class="col-span-6 md:col-span-2">
-                                                <InputLabel :for="'initial_stock_' + index" value="Stok Awal" />
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'branch_stock_' + index" value="Stok Cabang" />
                                                 <TextInput
-                                                    :id="'initial_stock_' + index"
-                                                    type="text"
+                                                    :id="'branch_stock_' + index"
+                                                    type="number"
                                                     class="block w-full bg-slate-100"
-                                                    v-model="product.initial_stock"
+                                                    :model-value="branchStockFor(product)"
                                                     disabled
                                                 />
                                             </div>
-                                            <div class="col-span-6 md:col-span-2">
-                                                <InputLabel :for="'quantity_' + index" value="Jumlah Permintaan" />
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'initial_stock_' + index" value="Sisa Stok" />
+                                                <TextInput
+                                                    :id="'initial_stock_' + index"
+                                                    type="number"
+                                                    min="0"
+                                                    class="block w-full bg-white"
+                                                    v-model="product.initial_stock"
+                                                />
+                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.initial_stock']" />
+                                                <p v-if="hasInvalidStock(product)" class="mt-1 text-xs text-red-600">Sisa stok + rusak melebihi stok cabang.</p>
+                                            </div>
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'used_quantity_' + index" value="Terpakai" />
+                                                <TextInput
+                                                    :id="'used_quantity_' + index"
+                                                    type="number"
+                                                    class="block w-full bg-slate-100"
+                                                    :model-value="usedStockFor(product)"
+                                                    disabled
+                                                />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'damaged_quantity_' + index" value="Rusak" />
+                                                <TextInput
+                                                    :id="'damaged_quantity_' + index"
+                                                    type="number"
+                                                    min="0"
+                                                    class="block w-full bg-white"
+                                                    v-model="product.damaged_quantity"
+                                                />
+                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.damaged_quantity']" />
+                                            </div>
+                                            <div class="col-span-6 md:col-span-1">
+                                                <InputLabel :for="'quantity_' + index" value="Request" />
                                                 <TextInput
                                                     :id="'quantity_' + index"
-                                                    type="text"
+                                                    type="number"
+                                                    min="1"
                                                     class="block w-full bg-white"
                                                     placeholder="Jumlah"
                                                     v-model="product.quantity"
@@ -266,36 +308,16 @@
                                                 <InputError class="mt-2" :message="form.errors['products.' + index + '.quantity']" />
                                             </div>
                                             <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'used_quantity_' + index" value="Terpakai" />
-                                                <TextInput
-                                                    :id="'used_quantity_' + index"
-                                                    type="text"
-                                                    class="block w-full bg-white"
-                                                    v-model="product.used_quantity"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.used_quantity']" />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
-                                                <InputLabel :for="'damaged_quantity_' + index" value="Rusak" />
-                                                <TextInput
-                                                    :id="'damaged_quantity_' + index"
-                                                    type="text"
-                                                    class="block w-full bg-white"
-                                                    v-model="product.damaged_quantity"
-                                                />
-                                                <InputError class="mt-2" :message="form.errors['products.' + index + '.damaged_quantity']" />
-                                            </div>
-                                            <div class="col-span-6 md:col-span-1">
                                                 <InputLabel :for="'final_stock_' + index" value="Stok Akhir" />
                                                 <TextInput
                                                     :id="'final_stock_' + index"
-                                                    type="text"
+                                                    type="number"
                                                     class="block w-full bg-slate-100"
                                                     :model-value="finalStockFor(product)"
                                                     disabled
                                                 />
                                             </div>
-                                            <div class="col-span-6 md:col-span-2 text-xs text-gray-500 pt-6">
+                                            <div class="col-span-6 md:col-span-3 text-xs text-gray-500 pt-6">
                                                 Stok pusat: <span class="font-semibold">{{ product.product_id?.stock ?? 0 }}</span>
                                             </div>
                                         </div>

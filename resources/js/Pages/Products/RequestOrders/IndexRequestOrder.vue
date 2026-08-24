@@ -496,8 +496,8 @@
                                     <tr>
                                         <th class="border border-gray-300">No</th>
                                         <th class="border border-gray-300">Nama Barang</th>
-                                        <th class="border border-gray-300">Stok Awal</th>
-                                        <th class="border border-gray-300">Jumlah Barang</th>
+                                        <th class="border border-gray-300">Sisa Stok</th>
+                                        <th class="border border-gray-300">Request</th>
                                         <th class="border border-gray-300">Terpakai</th>
                                         <th class="border border-gray-300">Rusak</th>
                                         <th class="border border-gray-300">Stok Akhir</th>
@@ -691,8 +691,8 @@
                                                     <tr>
                                                         <th class="border border-gray-300 px-2">No</th>
                                                         <th class="border border-gray-300 px-2">Nama Barang</th>
-                                                        <th class="border border-gray-300 px-2">Stok Awal</th>
-                                                        <th class="border border-gray-300 px-2">Jumlah Barang</th>
+                                                        <th class="border border-gray-300 px-2">Sisa Stok</th>
+                                                        <th class="border border-gray-300 px-2">Request</th>
                                                         <th class="border border-gray-300 px-2">Terpakai</th>
                                                         <th class="border border-gray-300 px-2">Rusak</th>
                                                         <th class="border border-gray-300 px-2">Stok Akhir</th>

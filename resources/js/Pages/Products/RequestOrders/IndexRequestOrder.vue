@@ -202,6 +202,11 @@
     function formatRupiah(value) {
         return "Rp. " + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
+    const stockAtRequest = (item) => {
+        return Number(item.initial_stock ?? 0)
+            + Number(item.used_quantity ?? 0)
+            + Number(item.damaged_quantity ?? 0);
+    };
     const steps = [
         "Sedang diverifikasi",
         "Disetujui",
@@ -496,6 +501,7 @@
                                     <tr>
                                         <th class="border border-gray-300">No</th>
                                         <th class="border border-gray-300">Nama Barang</th>
+                                        <th class="border border-gray-300">Stok Cabang</th>
                                         <th class="border border-gray-300">Sisa Stok</th>
                                         <th class="border border-gray-300">Request</th>
                                         <th class="border border-gray-300">Terpakai</th>
@@ -511,6 +517,7 @@
                                     <tr v-for="(list, index) in form.listData" :key="list.id">
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ index + 1 }}</td>
                                         <td class="border border-gray-300 py-1 px-2">{{ list.center_stock.product.product_name }}</td>
+                                        <td class="border border-gray-300 py-1 px-2 text-center">{{ stockAtRequest(list) }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ list.initial_stock ?? 0 }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ list.quantity }}</td>
                                         <td class="border border-gray-300 py-1 px-2 text-center">{{ list.used_quantity ?? 0 }}</td>
@@ -691,6 +698,7 @@
                                                     <tr>
                                                         <th class="border border-gray-300 px-2">No</th>
                                                         <th class="border border-gray-300 px-2">Nama Barang</th>
+                                                        <th class="border border-gray-300 px-2">Stok Cabang</th>
                                                         <th class="border border-gray-300 px-2">Sisa Stok</th>
                                                         <th class="border border-gray-300 px-2">Request</th>
                                                         <th class="border border-gray-300 px-2">Terpakai</th>
@@ -702,6 +710,7 @@
                                                     <tr v-for="(list, index) in form.listData" :key="list.id">
                                                         <td class="border border-gray-300 px-2 text-center">{{ index + 1 }}</td>
                                                         <td class="border border-gray-300 px-2">{{ list.center_stock.product.product_name }}</td>
+                                                        <td class="border border-gray-300 px-2 text-center">{{ stockAtRequest(list) }}</td>
                                                         <td class="border border-gray-300 px-2 text-center">{{ list.initial_stock ?? 0 }}</td>
                                                         <td class="border border-gray-300 px-2 text-center">{{ list.quantity }}</td>
                                                         <td class="border border-gray-300 px-2 text-center">{{ list.used_quantity ?? 0 }}</td>

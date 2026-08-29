@@ -37,7 +37,7 @@ class RequestOrderPolicy
      */
     public function update(User $user, RequestOrder $requestOrder): bool
     {
-        return $user->hasPermissionTo('request-order: update') ? true : false;
+        return $user->hasRole('root') || $user->hasPermissionTo('request-order: update');
     }
 
     /**

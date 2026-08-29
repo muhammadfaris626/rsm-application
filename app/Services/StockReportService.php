@@ -42,7 +42,9 @@ class StockReportService
                 'branch' => $row->branch_name,
                 'category' => $row->product_category_name ?? '-',
                 'product' => $row->product_name,
-                'initial_stock' => (int) $row->initial_stock,
+                'initial_stock' => (int) $row->initial_stock
+                    + (int) $row->used_quantity
+                    + (int) $row->damaged_quantity,
                 'additional_stock' => (int) ($row->approved_quantity ?? 0),
                 'used_stock' => (int) $row->used_quantity,
                 'damaged_stock' => (int) $row->damaged_quantity,

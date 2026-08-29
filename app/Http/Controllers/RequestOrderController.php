@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,13 +58,47 @@ class RequestOrderController extends Controller {
     }
 
     private function requestBranchId(Request $request): int {
-        return (int) ($request->input('branch_id.id') ?? $request->input('branch_id.0.id'));
+        $branchId = (int) ($request->input('branch_id.id') ?? $request->input('branch_id.0.id'));
+        if ($branchId <= 0 || !Branch::whereKey($branchId)->exists()) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Cabang yang dipilih tidak ditemukan.',
+            ]);
+        }
+
+        return $branchId;
+    }
+
+    private function authorizeRequestBranch(int $branchId): void {
+        $user = Auth::user();
+        if ($user->hasRole(['root', 'admin-pusat'])) {
+            return;
+        }
+
+        $employeeBranchId = Employee::query()
+            ->where('user_id', $user->id)
+            ->orWhere('employee_number', $user->username)
+            ->value('branch_id');
+
+        abort_if(!$employeeBranchId || (int) $employeeBranchId !== $branchId, 403);
     }
 
     private function calculateRequestStocks(array $products, int $branchId): array {
-        return collect($products)->map(function(array $product, int $index) use ($branchId) {
+        $selectedProductIds = [];
+
+        return collect($products)->map(function(array $product, int $index) use ($branchId, &$selectedProductIds) {
             $centerStockId = (int) ($product['product_id']['id'] ?? 0);
-            $productId = CenterStock::whereKey($centerStockId)->value('product_id');
+            $centerStock = CenterStock::query()
+                ->select('id', 'product_id', 'serial_barcode')
+                ->find($centerStockId);
+            $productId = $centerStock?->product_id;
+
+            if ($productId && in_array((int) $productId, $selectedProductIds, true)) {
+                throw ValidationException::withMessages([
+                    "products.{$index}.product_id" => 'Barang yang sama tidak boleh ditambahkan lebih dari satu kali.',
+                ]);
+            }
+            $selectedProductIds[] = (int) $productId;
+
             $branchStock = $productId
                 ? (int) BranchProduct::where('branch_id', $branchId)
                     ->where('product_id', $productId)
@@ -84,8 +119,82 @@ class RequestOrderController extends Controller {
                 'used_stock' => $branchStock - $remainingStock - $damagedStock,
                 'damaged_stock' => $damagedStock,
                 'final_stock' => $remainingStock,
+                'serial_barcode' => $centerStock->serial_barcode,
             ];
         })->all();
+    }
+
+    private function nextRequestOrderStatus(string $status): ?string {
+        return [
+            'Sedang diverifikasi' => 'Disetujui',
+            'Disetujui' => 'Pengiriman barang',
+            'Pengiriman barang' => 'Tiba di lokasi',
+            'Tiba di lokasi' => 'Pengecekan barang',
+            'Pengecekan barang' => 'Selesai',
+        ][$status] ?? null;
+    }
+
+    private function authorizeStatusTransition(RequestOrder $requestOrder): void {
+        $user = Auth::user();
+        if ($user->hasRole('root')) {
+            return;
+        }
+
+        if ($user->hasRole('admin-pusat')) {
+            abort_unless(in_array($requestOrder->status, [
+                'Sedang diverifikasi',
+                'Disetujui',
+            ], true), 403);
+            return;
+        }
+
+        if ($user->hasRole('admin-branch')) {
+            $this->authorizeRequestBranch((int) $requestOrder->branch_id);
+            abort_unless(in_array($requestOrder->status, [
+                'Pengiriman barang',
+                'Tiba di lokasi',
+                'Pengecekan barang',
+            ], true), 403);
+            return;
+        }
+
+        abort(403);
+    }
+
+    private function reconcileBranchStock(ListRequestOrder $item, int $branchId, int $productId): void {
+        $branchProducts = BranchProduct::where('branch_id', $branchId)
+            ->where('product_id', $productId)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        $currentStock = (int) $branchProducts->sum(fn(BranchProduct $product) => (int) $product->quantity);
+        $expectedStock = (int) $item->initial_stock
+            + (int) $item->used_quantity
+            + (int) $item->damaged_quantity;
+
+        if ($currentStock !== $expectedStock) {
+            throw ValidationException::withMessages([
+                'approval' => "Stok cabang untuk barang ini berubah dari {$expectedStock} menjadi {$currentStock} selama proses permintaan. Proses selesai dibatalkan agar stok tidak salah.",
+            ]);
+        }
+
+        $quantityToRemove = (int) $item->used_quantity + (int) $item->damaged_quantity;
+        foreach ($branchProducts as $branchProduct) {
+            if ($quantityToRemove <= 0) {
+                break;
+            }
+
+            $availableQuantity = (int) $branchProduct->quantity;
+            $deductedQuantity = min($availableQuantity, $quantityToRemove);
+            $branchProduct->update(['quantity' => $availableQuantity - $deductedQuantity]);
+            $quantityToRemove -= $deductedQuantity;
+        }
+
+        if ($quantityToRemove > 0) {
+            throw ValidationException::withMessages([
+                'approval' => 'Stok cabang tidak mencukupi untuk mencatat barang terpakai dan rusak.',
+            ]);
+        }
     }
 
     public function index(Request $request): Response {
@@ -172,8 +281,6 @@ class RequestOrderController extends Controller {
 
     public function store(RequestOrderRequest $request): RedirectResponse {
         Gate::authorize('create', RequestOrder::class);
-        $count = (RequestOrder::max('id') ?? 0) + 1;
-        $roFormat = "RO-RSM-" . date('mdY') . "-" . str_pad($count, 4, '0', STR_PAD_LEFT);
 
         if (empty($request->products)) {
             Session::flash('toast', ['message' => 'Silahkan tambah produk terlebih dahulu.', 'type' => 'error']);
@@ -182,11 +289,14 @@ class RequestOrderController extends Controller {
 
         $request->validate([
             'products.*.product_id' => 'required',
+            'products.*.product_id.id' => 'required|integer|exists:center_stocks,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.initial_stock' => 'required|integer|min:0',
             'products.*.damaged_quantity' => 'required|integer|min:0',
         ], [
             'products.*.product_id.required' => 'Kolom barang wajib diisi.',
+            'products.*.product_id.id.required' => 'Kolom barang wajib diisi.',
+            'products.*.product_id.id.exists' => 'Barang yang dipilih tidak ditemukan.',
             'products.*.quantity.required' => 'Kolom request wajib diisi.',
             'products.*.quantity.min' => 'Jumlah request minimal 1.',
             'products.*.initial_stock.required' => 'Kolom sisa stok wajib diisi.',
@@ -196,6 +306,7 @@ class RequestOrderController extends Controller {
         ]);
 
         $branchId = $this->requestBranchId($request);
+        $this->authorizeRequestBranch($branchId);
         $stockCalculations = $this->calculateRequestStocks($request->products, $branchId);
 
         // $insufficientStock = [];
@@ -218,37 +329,42 @@ class RequestOrderController extends Controller {
         //     return back();
         // }
 
-        $create = RequestOrder::create([
-            'ro_number' => $roFormat,
-            'branch_id' => $branchId,
-            'date' => $request->date,
-            'status' => 'Sedang diverifikasi'
-        ]);
-
-        UpdateRequestOrderHistory::create([
-            'request_order_id' => $create->id,
-            'user_id' => Auth::user()->id
-        ]);
-
-        foreach ($request->products as $index => $product) {
-            $stocks = $stockCalculations[$index];
-            ListRequestOrder::create([
-                'request_order_id' => $create->id,
-                'center_stock_id' => $product['product_id']['id'],
-                'quantity' => $product['quantity'],
-                'initial_stock' => $stocks['remaining_stock'],
-                'used_quantity' => $stocks['used_stock'],
-                'damaged_quantity' => $stocks['damaged_stock'],
-                'final_stock' => $stocks['final_stock'],
-                'serial_barcode' => $product['product_id']['serial_barcode']
+        DB::transaction(function() use($request, $branchId, $stockCalculations) {
+            $create = RequestOrder::create([
+                'ro_number' => 'TEMP-' . Str::uuid(),
+                'branch_id' => $branchId,
+                'date' => $request->date,
+                'status' => 'Sedang diverifikasi',
             ]);
-        }
+            $create->update([
+                'ro_number' => 'RO-RSM-' . date('mdY') . '-' . str_pad((string) $create->id, 4, '0', STR_PAD_LEFT),
+            ]);
 
-        RequestOrderLog::create([
-            'request_order_id' => $create->id,
-            'user_id' => Auth::user()->id,
-            'status' => 'Sedang diverifikasi',
-        ]);
+            UpdateRequestOrderHistory::create([
+                'request_order_id' => $create->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            foreach ($request->products as $index => $product) {
+                $stocks = $stockCalculations[$index];
+                ListRequestOrder::create([
+                    'request_order_id' => $create->id,
+                    'center_stock_id' => $product['product_id']['id'],
+                    'quantity' => $product['quantity'],
+                    'initial_stock' => $stocks['remaining_stock'],
+                    'used_quantity' => $stocks['used_stock'],
+                    'damaged_quantity' => $stocks['damaged_stock'],
+                    'final_stock' => $stocks['final_stock'],
+                    'serial_barcode' => $stocks['serial_barcode'],
+                ]);
+            }
+
+            RequestOrderLog::create([
+                'request_order_id' => $create->id,
+                'user_id' => Auth::id(),
+                'status' => 'Sedang diverifikasi',
+            ]);
+        });
 
         Session::flash('toast', ['message' => 'Data berhasil ditambahkan.']);
         return to_route('requestOrders.index');
@@ -362,11 +478,14 @@ class RequestOrderController extends Controller {
         }
         $request->validate([
             'products.*.product_id' => 'required',
+            'products.*.product_id.id' => 'required|integer|exists:center_stocks,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.initial_stock' => 'required|integer|min:0',
             'products.*.damaged_quantity' => 'required|integer|min:0',
         ], [
             'products.*.product_id.required' => 'Kolom barang wajib diisi.',
+            'products.*.product_id.id.required' => 'Kolom barang wajib diisi.',
+            'products.*.product_id.id.exists' => 'Barang yang dipilih tidak ditemukan.',
             'products.*.quantity.required' => 'Kolom request wajib diisi.',
             'products.*.quantity.min' => 'Jumlah request minimal 1.',
             'products.*.initial_stock.required' => 'Kolom sisa stok wajib diisi.',
@@ -375,6 +494,7 @@ class RequestOrderController extends Controller {
             'products.*.damaged_quantity.integer' => 'Kolom rusak harus berupa angka bulat.',
         ]);
         $branchId = $this->requestBranchId($request);
+        $this->authorizeRequestBranch($branchId);
         $stockCalculations = $this->calculateRequestStocks($request->products, $branchId);
         // $insufficientStock = [];
         // foreach ($request->products as $product) {
@@ -392,37 +512,35 @@ class RequestOrderController extends Controller {
         //     ]);
         //     return back();
         // }
-        // Update the RequestOrder
-        $requestOrder->update([
-            'ro_number' => $roFormat,
-            'branch_id' => $branchId,
-            'date' => $request->date,
-            'status' => 'Sedang diverifikasi' // Assuming the status remains the same
-        ]);
-
-        // Update the RequestOrderHistory
-        UpdateRequestOrderHistory::create([
-            'request_order_id' => $requestOrder->id,
-            'user_id' => Auth::user()->id
-        ]);
-
-        // Delete the previous ListRequestOrder records for the updated RequestOrder
-        ListRequestOrder::where('request_order_id', $requestOrder->id)->delete();
-
-        // Insert the new ListRequestOrder records
-        foreach ($request->products as $index => $product) {
-            $stocks = $stockCalculations[$index];
-            ListRequestOrder::create([
-                'request_order_id' => $requestOrder->id,
-                'center_stock_id' => $product['product_id']['id'],
-                'quantity' => $product['quantity'],
-                'initial_stock' => $stocks['remaining_stock'],
-                'used_quantity' => $stocks['used_stock'],
-                'damaged_quantity' => $stocks['damaged_stock'],
-                'final_stock' => $stocks['final_stock'],
-                'serial_barcode' => $product['product_id']['serial_barcode']
+        DB::transaction(function() use($request, $requestOrder, $branchId, $stockCalculations, $roFormat) {
+            $requestOrder->update([
+                'ro_number' => $roFormat,
+                'branch_id' => $branchId,
+                'date' => $request->date,
+                'status' => 'Sedang diverifikasi',
             ]);
-        }
+
+            UpdateRequestOrderHistory::create([
+                'request_order_id' => $requestOrder->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            ListRequestOrder::where('request_order_id', $requestOrder->id)->delete();
+
+            foreach ($request->products as $index => $product) {
+                $stocks = $stockCalculations[$index];
+                ListRequestOrder::create([
+                    'request_order_id' => $requestOrder->id,
+                    'center_stock_id' => $product['product_id']['id'],
+                    'quantity' => $product['quantity'],
+                    'initial_stock' => $stocks['remaining_stock'],
+                    'used_quantity' => $stocks['used_stock'],
+                    'damaged_quantity' => $stocks['damaged_stock'],
+                    'final_stock' => $stocks['final_stock'],
+                    'serial_barcode' => $stocks['serial_barcode'],
+                ]);
+            }
+        });
 
         Session::flash('toast', ['message' => 'Data berhasil diperbarui.']);
         return to_route('requestOrders.index');
@@ -463,60 +581,118 @@ class RequestOrderController extends Controller {
         ], [
             'approval.required' => 'Kolom persetujuan wajib diisi.'
         ]);
-        $check = RequestOrder::where('id', $id)->first();
-        if (!$check) {
+        $requestOrder = RequestOrder::find($id);
+        if (!$requestOrder) {
             Session::flash('toast', ['message' => 'Permintaan stok tidak ditemukan.', 'type' => 'error']);
             return back();
         }
+        Gate::authorize('update', $requestOrder);
+        $this->authorizeStatusTransition($requestOrder);
 
-        RequestOrderLog::create([
-            'request_order_id' => $id,
-            'user_id' => Auth::user()->id,
-            'status' => $request->approval
-        ]);
+        DB::transaction(function() use($request, $id) {
+            $requestOrder = RequestOrder::whereKey($id)->lockForUpdate()->firstOrFail();
+            $nextStatus = $this->nextRequestOrderStatus($requestOrder->status);
 
-        $check->update([
-            'status' => $request->approval
-        ]);
-        if ($request->approval == 'Selesai') {
-            for ($i=0; $i < count($request->listData); $i++) {
-                $check = CenterStock::where('id', $request->listData[$i]['center_stock_id'])->first();
-                if ($check) {
-                    $check->update([
-                        'stock' => $check->stock - $request->listData[$i]['approved_quantity']
-                    ]);
-                }
-                BranchProduct::create([
-                    'branch_id' => $request->branch_id[0]['id'],
-                    'product_id' => $request->listData[$i]['center_stock']['product_id'],
-                    'quantity' => $request->listData[$i]['approved_quantity'],
-                    'serial_barcode' => $request->listData[$i]['serial_barcode'],
-                    'request_order_id' => $id
+            if ($nextStatus !== $request->approval) {
+                throw ValidationException::withMessages([
+                    'approval' => $nextStatus
+                        ? "Status berikutnya harus {$nextStatus}."
+                        : 'Permintaan stok ini sudah selesai dan tidak dapat diproses kembali.',
                 ]);
             }
-            Session::flash('toast', ['message' => 'Permintaan pesanan telah selesai.']);
-        } elseif($request->approval == 'Disetujui') {
-            for ($i=0; $i < count($request->listData); $i++) {
-                $check = ListRequestOrder::where('id', $request->listData[$i]['id'])->first();
-                if ($check) {
-                    $approvedQuantity = (int) $request->listData[$i]['approved_quantity'];
-                    $check->update([
+
+            if ($request->approval === 'Disetujui') {
+                $request->validate([
+                    'listData' => 'required|array|min:1',
+                    'listData.*.id' => 'required|integer|distinct',
+                    'listData.*.approved_quantity' => 'required|integer|min:0',
+                ], [
+                    'listData.*.approved_quantity.required' => 'Jumlah yang disetujui wajib diisi.',
+                    'listData.*.approved_quantity.integer' => 'Jumlah yang disetujui harus berupa angka bulat.',
+                    'listData.*.approved_quantity.min' => 'Jumlah yang disetujui tidak boleh negatif.',
+                ]);
+
+                $submittedItems = collect($request->listData)->keyBy(fn($item) => (int) $item['id']);
+                $items = ListRequestOrder::where('request_order_id', $requestOrder->id)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($submittedItems->count() !== $items->count()) {
+                    throw ValidationException::withMessages([
+                        'approval' => 'Data barang yang disetujui tidak sesuai dengan permintaan.',
+                    ]);
+                }
+
+                foreach ($items as $item) {
+                    $submittedItem = $submittedItems->get($item->id);
+                    if (!$submittedItem) {
+                        throw ValidationException::withMessages([
+                            'approval' => 'Data barang yang disetujui tidak lengkap.',
+                        ]);
+                    }
+
+                    $approvedQuantity = (int) $submittedItem['approved_quantity'];
+                    if ($approvedQuantity > (int) $item->quantity) {
+                        throw ValidationException::withMessages([
+                            'approval' => 'Jumlah yang disetujui tidak boleh melebihi jumlah request.',
+                        ]);
+                    }
+
+                    $item->update([
                         'approved_quantity' => $approvedQuantity,
-                        'final_stock' => ((int) $check->initial_stock) + $approvedQuantity,
-                        'status' => 1
+                        'final_stock' => (int) $item->initial_stock + $approvedQuantity,
+                        'status' => 1,
                     ]);
                 }
             }
-            Session::flash('toast', ['message' => 'Permintaan pesanan berhasil disetujui.']);
-        } else {
-            $messages = [
-                'Disetujui' => 'Permintaan pesanan berhasil disetujui.',
-                'Pengiriman barang' => 'Permintaan pesanan telah dikirim.',
-                'Tiba di lokasi' => 'Permintaan pesanan telah tiba di lokasi.',
-                'Pengecekan barang' => 'Proses pengecekan barang.',
-            ];
-            Session::flash('toast', ['message' => $messages[$request->approval] ?? 'Status tidak dikenali.']);
-        }
+
+            if ($request->approval === 'Selesai') {
+                $items = ListRequestOrder::where('request_order_id', $requestOrder->id)
+                    ->with('centerStock:id,product_id,stock,serial_barcode')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($items as $item) {
+                    $approvedQuantity = (int) ($item->approved_quantity ?? 0);
+                    $centerStock = CenterStock::whereKey($item->center_stock_id)->lockForUpdate()->firstOrFail();
+
+                    if ((int) $centerStock->stock < $approvedQuantity) {
+                        throw ValidationException::withMessages([
+                            'approval' => 'Stok pusat tidak mencukupi untuk menyelesaikan permintaan.',
+                        ]);
+                    }
+
+                    $this->reconcileBranchStock($item, (int) $requestOrder->branch_id, (int) $centerStock->product_id);
+                    $centerStock->update(['stock' => (int) $centerStock->stock - $approvedQuantity]);
+
+                    if ($approvedQuantity > 0) {
+                        BranchProduct::create([
+                            'branch_id' => $requestOrder->branch_id,
+                            'product_id' => $centerStock->product_id,
+                            'quantity' => $approvedQuantity,
+                            'serial_barcode' => $item->serial_barcode,
+                            'request_order_id' => $requestOrder->id,
+                        ]);
+                    }
+                }
+            }
+
+            $requestOrder->update(['status' => $request->approval]);
+            RequestOrderLog::create([
+                'request_order_id' => $requestOrder->id,
+                'user_id' => Auth::id(),
+                'status' => $request->approval,
+            ]);
+        });
+
+        $messages = [
+            'Disetujui' => 'Permintaan pesanan berhasil disetujui.',
+            'Pengiriman barang' => 'Permintaan pesanan telah dikirim.',
+            'Tiba di lokasi' => 'Permintaan pesanan telah tiba di lokasi.',
+            'Pengecekan barang' => 'Proses pengecekan barang.',
+            'Selesai' => 'Permintaan pesanan telah selesai.',
+        ];
+        Session::flash('toast', ['message' => $messages[$request->approval]]);
         return back();
     }
 }

@@ -21,12 +21,21 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        DB::statement('
-            UPDATE employees
-            INNER JOIN users ON users.username = employees.employee_number
-            SET employees.user_id = users.id
-            WHERE employees.user_id IS NULL
-        ');
+        DB::table('employees')
+            ->whereNull('user_id')
+            ->select('id', 'employee_number')
+            ->orderBy('id')
+            ->each(function ($employee): void {
+                $userId = DB::table('users')
+                    ->where('username', $employee->employee_number)
+                    ->value('id');
+
+                if ($userId) {
+                    DB::table('employees')
+                        ->where('id', $employee->id)
+                        ->update(['user_id' => $userId]);
+                }
+            });
     }
 
     /**

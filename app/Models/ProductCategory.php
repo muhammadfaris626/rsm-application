@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ProductCategory extends Model
 {
@@ -14,6 +15,10 @@ class ProductCategory extends Model
 
     public function updateProductCategoryHistory(): HasMany {
         return $this->hasMany(UpdateProductCategoryHistory::class);
+    }
+
+    public function latestUpdateProductCategoryHistory(): HasOne {
+        return $this->hasOne(UpdateProductCategoryHistory::class)->latestOfMany();
     }
 
     public function product(): HasMany {

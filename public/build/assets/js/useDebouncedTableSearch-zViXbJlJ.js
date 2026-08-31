@@ -1,0 +1,1 @@
+import{w as e,O as r,b as t,r as s}from"./vendor-vue-BVAfVR0s.js";function a(a,o="",c=350){const n=s(o??"");let u;return e(n,e=>{clearTimeout(u),u=setTimeout(()=>{const t=new URL(route(a));e&&t.searchParams.set("search",e),r.visit(t,{preserveScroll:!0,preserveState:!0,replace:!0,only:["fetchData","search"]})},c)}),t(()=>clearTimeout(u)),n}export{a as u};

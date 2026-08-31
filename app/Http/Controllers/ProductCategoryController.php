@@ -31,7 +31,7 @@ class ProductCategoryController extends Controller
     public function index(Request $request): Response {
         Gate::authorize('viewAny', ProductCategory::class);
         $searchQuery = ProductCategory::query()
-            ->with('updateProductCategoryHistory.user')
+            ->with('latestUpdateProductCategoryHistory.user:id,name')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = ProductCategoryResource::collection($searchQuery->paginate(12)->withQueryString());

@@ -20,9 +20,7 @@ class PositionResource extends JsonResource
             'position_name' => $this->position_name,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updatePositionHistory', function() {
-                return $this->updatePositionHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdatePositionHistory'),
         ];
     }
 }

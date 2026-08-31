@@ -24,6 +24,15 @@
         products: []
     });
 
+    const productLabel = (product) => {
+        const category = Array.isArray(product?.product_category_id)
+            ? product.product_category_id[0]
+            : null;
+        const categoryName = category?.product_category_name ?? 'Tanpa Kategori';
+
+        return `[ ${categoryName} ] ${product?.product_name ?? '-'}`;
+    };
+
     const addProduct = () => {
         form.products.push({
             product_id: "",
@@ -161,7 +170,7 @@
                                                 :options="props.products"
                                                 :close-on-select="true"
                                                 placeholder="Pilih Barang"
-                                                label="product_name"
+                                                :custom-label="productLabel"
                                                 track-by="id"
                                                 :id="'product_id_' + index"
                                             />

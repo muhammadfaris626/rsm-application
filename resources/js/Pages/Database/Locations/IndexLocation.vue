@@ -1,6 +1,6 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { ref, onMounted, watch } from 'vue';
+    import { ref, onBeforeUnmount, onMounted, watch } from 'vue';
     import { Head, Link, useForm } from '@inertiajs/vue3';
     import axios from "axios";
     import Modal from '@/Components/Modal.vue';
@@ -20,9 +20,13 @@
     const locations = ref([]);
     const paginationMeta = ref({});
     const currentPage = ref(1);
+    let searchTimer;
+    let requestSequence = 0;
 
     // Fetch Data Location
     const fetchLocations = async () => {
+        const currentRequest = ++requestSequence;
+
         try {
             const { data } = await axios.get(`/api/locations`, {
                 params: {
@@ -30,6 +34,9 @@
                     search: search.value
                 }
             });
+
+            if (currentRequest !== requestSequence) return;
+
             locations.value = data.data.data; // Data utama
             paginationMeta.value = data.data.meta; // Simpan meta pagination
         } catch (error) {
@@ -37,20 +44,21 @@
         }
     };
 
-    // Update data saat currentPage berubah
-    watch(currentPage, fetchLocations);
     watch(search, () => {
+        clearTimeout(searchTimer);
         currentPage.value = 1;
-        fetchLocations();
+        searchTimer = setTimeout(fetchLocations, 350);
     });
 
     // Panggil fetch saat komponen dimount
     onMounted(fetchLocations);
+    onBeforeUnmount(() => clearTimeout(searchTimer));
 
     // Fungsi untuk mengganti halaman
     const changePage = (page) => {
         if (page !== currentPage.value) {
             currentPage.value = page; // Ubah nomor halaman
+            fetchLocations();
         }
     };
 

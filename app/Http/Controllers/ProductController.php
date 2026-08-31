@@ -55,7 +55,7 @@ class ProductController extends Controller
             ->select('id', 'product_category_id', 'product_name', 'created_at', 'updated_at')
             ->with([
                 'productCategory:id,product_category_name',
-                'updateProductHistory.user',
+                'latestUpdateProductHistory.user:id,name',
             ])
             ->latest();
         
@@ -64,15 +64,14 @@ class ProductController extends Controller
             $searchQuery->paginate(12)->withQueryString()
         );
         
-        // Cache product categories
-        $productCategories = Cache::remember('product_categories', 600, function() {
-            return ProductCategory::select('id', 'product_category_name')->get();
-        });
-        
         return Inertia::render('Database/Products/IndexProduct', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'productCategories' => ProductCategoryResource::collection($productCategories)
+            'productCategories' => fn () => ProductCategoryResource::collection(
+                Cache::remember('product_categories', 600, function() {
+                    return ProductCategory::select('id', 'product_category_name')->get();
+                })
+            )
         ]);
     }
 

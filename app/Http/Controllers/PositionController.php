@@ -25,7 +25,7 @@ class PositionController extends Controller
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Position::class);
         $searchQuery = Position::query()
-            ->with('updatePositionHistory.user')
+            ->with('latestUpdatePositionHistory.user:id,name')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = PositionResource::collection($searchQuery->paginate(12)->withQueryString());

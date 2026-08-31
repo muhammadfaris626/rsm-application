@@ -76,21 +76,18 @@ class EmployeeController extends Controller
             ->with([
                 'branch:id,branch_name,branch_code',
                 'user:id,name,username,email',
-                'updateEmployeeHistory.user',
+                'latestUpdateEmployeeHistory.user:id,name',
             ])
             ->latest();
         
         $this->applySearch($searchQuery, $request->search);
         $data = EmployeeResource::collection($searchQuery->paginate(12)->withQueryString());
         
-        // Use cached branches
-        $branches = $this->getCachedActiveBranches();
-        
         return Inertia::render('Database/Employees/IndexEmployee', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'branches' => BranchResource::collection($branches),
-            'users' => $this->userOptions(),
+            'branches' => fn () => BranchResource::collection($this->getCachedActiveBranches()),
+            'users' => fn () => $this->userOptions(),
         ]);
     }
 

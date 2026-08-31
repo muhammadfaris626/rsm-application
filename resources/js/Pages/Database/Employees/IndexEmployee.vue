@@ -1,7 +1,7 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { ref, computed, watch } from 'vue';
-    import { usePage, useForm, router, Head } from '@inertiajs/vue3';
+    import { ref } from 'vue';
+    import { usePage, useForm, Head } from '@inertiajs/vue3';
     import Modal from '@/Components/Modal.vue';
     import InputLabel from '@/Components/InputLabel.vue';
     import InputError from '@/Components/InputError.vue';
@@ -13,6 +13,7 @@
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
+    import { useDebouncedTableSearch } from '@/Composables/useDebouncedTableSearch';
     defineProps(["fetchData", 'branches', 'users']);
     const firstItem = (value) => Array.isArray(value) ? value[0] : value;
     const branchName = (value) => firstItem(value)?.branch_name ?? '-';
@@ -32,22 +33,7 @@
         updated_at: "",
     });
     const { hasPermission } = usePermission();
-    let search = ref(usePage().props.search), pageNumber = ref(1);
-    let searchUrl = computed(() => {
-        let url = new URL(route('employees.index'));
-        url.searchParams.append("page", pageNumber.value);
-        if (search.value) {
-            url.searchParams.append("search", search.value);
-        }
-        return url;
-    });
-    watch(() => searchUrl.value, (updatedSearchUrl) => {
-        router.visit(updatedSearchUrl, {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true
-        });
-    });
+    const search = useDebouncedTableSearch('employees.index', usePage().props.search);
 
     const showModalCreate = ref(false);
     const showModalRead = ref(false);

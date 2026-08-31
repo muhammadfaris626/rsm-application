@@ -25,7 +25,7 @@ class ExpenditureController extends Controller
     public function index(Request $request): Response {
         Gate::authorize('viewAny', Expenditure::class);
         $searchQuery = Expenditure::query()
-            ->with('updateExpenditureHistory.user')
+            ->with('latestUpdateExpenditureHistory.user:id,name')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = ExpenditureResource::collection($searchQuery->paginate(12)->withQueryString());

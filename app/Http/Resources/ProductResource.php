@@ -23,9 +23,7 @@ class ProductResource extends JsonResource
             'product_name' => $this->product_name,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateProductHistory', function() {
-                return $this->updateProductHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateProductHistory'),
         ];
     }
 }

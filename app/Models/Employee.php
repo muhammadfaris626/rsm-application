@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
@@ -23,6 +24,10 @@ class Employee extends Model
 
     public function updateEmployeeHistory(): HasMany {
         return $this->hasMany(UpdateEmployeeHistory::class);
+    }
+
+    public function latestUpdateEmployeeHistory(): HasOne {
+        return $this->hasOne(UpdateEmployeeHistory::class)->latestOfMany();
     }
 
     public function managementStructure(): HasMany {

@@ -37,7 +37,7 @@ class BranchController extends Controller
         
         $searchQuery = Branch::query()
             ->select('id', 'branch_code', 'branch_name', 'branch_address', 'description', 'status', 'open_time', 'close_time', 'late_tolerance_minutes', 'created_at', 'updated_at')
-            ->with(['updateBranchHistory.user'])
+            ->with('latestUpdateBranchHistory.user:id,name')
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
         

@@ -25,6 +25,16 @@
         ? props.inventoryPurchase.supplier_id[0]
         : props.inventoryPurchase?.supplier_id;
 
+    const productLabel = (product) => {
+        const productOption = props.products.find(option => option.id === product?.id) ?? product;
+        const category = Array.isArray(productOption?.product_category_id)
+            ? productOption.product_category_id[0]
+            : null;
+        const categoryName = category?.product_category_name ?? 'Tanpa Kategori';
+
+        return `[ ${categoryName} ] ${product?.product_name ?? '-'}`;
+    };
+
     const form = useForm({
         id: props.inventoryPurchase?.id,
         invoice_number: props.inventoryPurchase?.invoice_number,
@@ -177,7 +187,7 @@
                                                 :options="props.products"
                                                 :close-on-select="true"
                                                 placeholder="Pilih Barang"
-                                                label="product_name"
+                                                :custom-label="productLabel"
                                                 track-by="id"
                                                 :id="'product_id_' + index"
                                             />

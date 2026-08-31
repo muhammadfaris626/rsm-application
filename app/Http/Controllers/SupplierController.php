@@ -30,7 +30,7 @@ class SupplierController extends Controller
     {
         Gate::authorize('viewAny', Supplier::class);
         $searchQuery = Supplier::query()
-            ->with('updateSupplierHistory.user')
+            ->with('latestUpdateSupplierHistory.user:id,name')
             ->latest();
         $this->applySearch($searchQuery, $request->search);
         $data = SupplierResource::collection($searchQuery->paginate(12)->withQueryString());

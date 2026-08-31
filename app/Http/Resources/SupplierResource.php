@@ -22,9 +22,7 @@ class SupplierResource extends JsonResource
             'address' => $this->address,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateSupplierHistory', function() {
-                return $this->updateSupplierHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateSupplierHistory'),
         ];
     }
 }

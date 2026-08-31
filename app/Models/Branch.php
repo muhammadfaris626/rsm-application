@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Branch extends Model
 {
@@ -23,6 +24,10 @@ class Branch extends Model
 
     public function updateBranchHistory(): HasMany {
         return $this->hasMany(UpdateBranchHistory::class);
+    }
+
+    public function latestUpdateBranchHistory(): HasOne {
+        return $this->hasOne(UpdateBranchHistory::class)->latestOfMany();
     }
 
     public function operationalBranch(): HasMany {

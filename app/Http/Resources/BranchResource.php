@@ -27,9 +27,7 @@ class BranchResource extends JsonResource
             'late_tolerance_minutes' => $this->late_tolerance_minutes,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateBranchHistory', function() {
-                return $this->updateBranchHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateBranchHistory'),
         ];
     }
 }

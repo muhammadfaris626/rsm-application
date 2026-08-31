@@ -19,14 +19,24 @@ class ProductImport implements ToModel, WithHeadingRow {
     }
 
     public function model(array $row) {
+        $categoryName = preg_replace('/\s+/u', ' ', trim((string) ($row['kategori_barang'] ?? ''))) ?? '';
+        $productName = preg_replace('/\s+/u', ' ', trim((string) ($row['nama_barang'] ?? ''))) ?? '';
+
+        if ($categoryName === '' || $productName === '') {
+            return null;
+        }
+
        // Cek apakah kategori produk sudah ada berdasarkan nama kategori
-        $category = ProductCategory::where('product_category_name', $row['kategori_barang'])->first();
+        $category = ProductCategory::whereRaw(
+            'LOWER(TRIM(product_category_name)) = ?',
+            [mb_strtolower($categoryName)]
+        )->first();
 
         if (!$category) {
             // Jika kategori tidak ditemukan, buat kategori baru
             $category = ProductCategory::create([
                 'product_category_code' => $this->generateCategoryCode(),
-                'product_category_name' => $row['kategori_barang']
+                'product_category_name' => $categoryName
             ]);
 
             // Simpan history pembuatan kategori baru
@@ -37,8 +47,8 @@ class ProductImport implements ToModel, WithHeadingRow {
         }
 
         // Cek apakah produk sudah ada dalam kategori tersebut
-        $existingProduct = Product::where('product_name', $row['nama_barang'])
-            ->where('product_category_id', $category->id)
+        $existingProduct = Product::where('product_category_id', $category->id)
+            ->whereRaw('LOWER(TRIM(product_name)) = ?', [mb_strtolower($productName)])
             ->exists();
 
         if ($existingProduct) {
@@ -48,7 +58,7 @@ class ProductImport implements ToModel, WithHeadingRow {
         // Input produk baru ke dalam database
         $product = Product::create([
             'product_category_id' => $category->id,
-            'product_name'        => $row['nama_barang'],
+            'product_name'        => $productName,
         ]);
 
         // Simpan history pembuatan produk baru

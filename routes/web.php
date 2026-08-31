@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('/inventoryPurchases', InventoryPurchaseController::class);
         Route::get('/printBarcode', [InventoryPurchaseController::class, 'printBarcode'])->name('printBarcode');
         Route::get('/requestOrders/{requestOrder}/delivery-note', [RequestOrderController::class, 'deliveryNote'])->name('requestOrders.deliveryNote');
+        Route::get('/requestOrders/branch-stocks/{branch}', [RequestOrderController::class, 'branchStocks'])->name('requestOrders.branchStocks');
         Route::resource('/requestOrders', RequestOrderController::class);
         Route::put('/approval/{id}', [RequestOrderController::class, 'approval'])->name('approval');
         Route::resource('/requestReturns', RequestReturnController::class);

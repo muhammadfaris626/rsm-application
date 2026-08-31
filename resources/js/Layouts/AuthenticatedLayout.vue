@@ -1,5 +1,5 @@
 <script setup>
-    import { onMounted, ref } from "vue";
+    import { onBeforeUnmount, onMounted, ref } from "vue";
     import { initFlowbite } from "flowbite";
     import Sidebar from "@/Components/Partials/Sidebar.vue";
     import Toast from "@/Components/Custom/Toast.vue";
@@ -7,16 +7,20 @@
     import { router } from "@inertiajs/vue3";
 
     const isLoading = ref(false);
+    const removeStartListener = router.on("start", () => {
+        isLoading.value = true;
+    });
+    const removeFinishListener = router.on("finish", () => {
+        isLoading.value = false;
+    });
+
     onMounted(() => {
         initFlowbite();
-        router.on("start", () => {
-            isLoading.value = true;
-        });
-        router.on("finish", () => {
-            setTimeout(() => {
-                isLoading.value = false;
-            }, 500);
-        });
+    });
+
+    onBeforeUnmount(() => {
+        removeStartListener();
+        removeFinishListener();
     });
 </script>
 

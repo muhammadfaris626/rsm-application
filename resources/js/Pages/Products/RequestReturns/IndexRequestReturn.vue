@@ -1,7 +1,7 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { ref, computed, watch } from 'vue';
-    import { usePage, useForm, router, Head, Link } from '@inertiajs/vue3';
+    import { ref, computed } from 'vue';
+    import { usePage, useForm, Head, Link } from '@inertiajs/vue3';
     import Modal from '@/Components/Modal.vue';
     import InputError from '@/Components/InputError.vue';
     import TextInput from "@/Components/TextInput.vue";
@@ -11,6 +11,7 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
+    import { useDebouncedTableSearch } from '@/Composables/useDebouncedTableSearch';
     defineProps(["fetchData", 'userBranch']);
     const firstItem = (value) => Array.isArray(value) ? value[0] : value;
     const requestOrderNumber = (value) => firstItem(value)?.ro_number ?? '-';
@@ -31,22 +32,7 @@
         approval: ""
     });
     const { hasPermission } = usePermission();
-    let search = ref(usePage().props.search), pageNumber = ref(1);
-    let searchUrl = computed(() => {
-        let url = new URL(route('requestReturns.index'));
-        url.searchParams.append("page", pageNumber.value);
-        if (search.value) {
-            url.searchParams.append("search", search.value);
-        }
-        return url;
-    });
-    watch(() => searchUrl.value, (updatedSearchUrl) => {
-        router.visit(updatedSearchUrl, {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true
-        });
-    });
+    const search = useDebouncedTableSearch('requestReturns.index', usePage().props.search);
 
     const formatTanggal = (dateString) => {
         const date = new Date(dateString);

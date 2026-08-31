@@ -130,7 +130,7 @@ class StockReportTest extends TestCase
         $order = RequestOrder::create(['ro_number' => 'RO-1', 'branch_id' => $branch->id, 'date' => '2026-08-15', 'status' => 'Selesai']);
         ListRequestOrder::create([
             'request_order_id' => $order->id, 'center_stock_id' => $centerStock->id, 'quantity' => 50,
-            'initial_stock' => 55, 'approved_quantity' => 50, 'used_quantity' => 20,
+            'initial_stock' => 80, 'approved_quantity' => 50, 'used_quantity' => 20,
             'damaged_quantity' => 5, 'final_stock' => 105, 'serial_barcode' => 'CENTER-1', 'status' => 1,
         ]);
         DB::table('request_order_logs')->insert([

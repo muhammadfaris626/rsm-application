@@ -27,9 +27,7 @@ class InventoryPurchaseResource extends JsonResource
             }, []),
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateInventoryPurchaseHistory', function() {
-                return $this->updateInventoryPurchaseHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateInventoryPurchaseHistory'),
             'stock' => $this->whenLoaded('centerStock', function() {
                 return $this->centerStock;
             }, []),

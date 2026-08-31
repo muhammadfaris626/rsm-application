@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -85,11 +86,26 @@ class RequestOrderController extends Controller {
     private function calculateRequestStocks(array $products, int $branchId): array {
         $selectedProductIds = [];
 
-        return collect($products)->map(function(array $product, int $index) use ($branchId, &$selectedProductIds) {
+        $centerStockIds = collect($products)
+            ->map(fn(array $product) => (int) ($product['product_id']['id'] ?? 0))
+            ->filter()
+            ->unique()
+            ->values();
+        $centerStocks = CenterStock::query()
+            ->select('id', 'product_id', 'serial_barcode')
+            ->whereIn('id', $centerStockIds)
+            ->get()
+            ->keyBy('id');
+        $branchStocks = BranchProduct::query()
+            ->select('product_id', DB::raw('SUM(quantity) as stock'))
+            ->where('branch_id', $branchId)
+            ->whereIn('product_id', $centerStocks->pluck('product_id')->filter()->unique())
+            ->groupBy('product_id')
+            ->pluck('stock', 'product_id');
+
+        return collect($products)->map(function(array $product, int $index) use ($centerStocks, $branchStocks, &$selectedProductIds) {
             $centerStockId = (int) ($product['product_id']['id'] ?? 0);
-            $centerStock = CenterStock::query()
-                ->select('id', 'product_id', 'serial_barcode')
-                ->find($centerStockId);
+            $centerStock = $centerStocks->get($centerStockId);
             $productId = $centerStock?->product_id;
 
             if ($productId && in_array((int) $productId, $selectedProductIds, true)) {
@@ -99,26 +115,21 @@ class RequestOrderController extends Controller {
             }
             $selectedProductIds[] = (int) $productId;
 
-            $branchStock = $productId
-                ? (int) BranchProduct::where('branch_id', $branchId)
-                    ->where('product_id', $productId)
-                    ->sum('quantity')
-                : 0;
-            $remainingStock = $this->stockReportValue($product, 'initial_stock');
+            $initialStock = (int) ($branchStocks->get($productId) ?? 0);
+            $usedStock = $this->stockReportValue($product, 'used_quantity');
             $damagedStock = $this->stockReportValue($product, 'damaged_quantity');
 
-            if ($remainingStock + $damagedStock > $branchStock) {
+            if ($usedStock + $damagedStock > $initialStock) {
                 throw ValidationException::withMessages([
-                    "products.{$index}.initial_stock" => 'Sisa stok dan barang rusak tidak boleh melebihi stok cabang.',
+                    "products.{$index}.used_quantity" => 'Barang terpakai dan rusak tidak boleh melebihi stok awal.',
                 ]);
             }
 
             return [
-                'branch_stock' => $branchStock,
-                'remaining_stock' => $remainingStock,
-                'used_stock' => $branchStock - $remainingStock - $damagedStock,
+                'initial_stock' => $initialStock,
+                'used_stock' => $usedStock,
                 'damaged_stock' => $damagedStock,
-                'final_stock' => $remainingStock,
+                'final_stock' => $initialStock - $usedStock - $damagedStock,
                 'serial_barcode' => $centerStock->serial_barcode,
             ];
         })->all();
@@ -168,9 +179,7 @@ class RequestOrderController extends Controller {
             ->lockForUpdate()
             ->get();
         $currentStock = (int) $branchProducts->sum(fn(BranchProduct $product) => (int) $product->quantity);
-        $expectedStock = (int) $item->initial_stock
-            + (int) $item->used_quantity
-            + (int) $item->damaged_quantity;
+        $expectedStock = (int) $item->initial_stock;
 
         if ($currentStock !== $expectedStock) {
             throw ValidationException::withMessages([
@@ -212,17 +221,6 @@ class RequestOrderController extends Controller {
             });
         }
 
-        $branches = $isCentralUser
-            ? Branch::select('id', 'branch_code', 'branch_name', 'status')
-                ->where('status', 'Aktif')
-                ->get()
-            : ($employee
-                ? Branch::select('id', 'branch_code', 'branch_name', 'status')
-                    ->where('status', 'Aktif')
-                    ->where('id', $employee->branch_id)
-                    ->get()
-                : collect());
-        
         // Optimized query with eager loading
         $searchQuery = RequestOrder::query()
             ->select('id', 'ro_number', 'branch_id', 'date', 'status', 'created_at', 'updated_at')
@@ -230,8 +228,8 @@ class RequestOrderController extends Controller {
                 'branch:id,branch_name,branch_code',
                 'listRequestOrder:id,request_order_id,center_stock_id,quantity,initial_stock,used_quantity,damaged_quantity,final_stock,approved_quantity,serial_barcode,status',
                 'listRequestOrder.centerStock:id,product_id,stock,serial_barcode',
-                'listRequestOrder.centerStock.product:id,product_name',
-                'updateRequestOrderHistory.user:id,name',
+                'listRequestOrder.centerStock.product:id,product_name,product_category_id',
+                'latestUpdateRequestOrderHistory.user:id,name',
                 'requestOrderLog.user:id,name'
             ])
             ->when(!$isCentralUser && $employee,
@@ -251,7 +249,18 @@ class RequestOrderController extends Controller {
         return Inertia::render('Products/RequestOrders/IndexRequestOrder', [
             'fetchData' => RequestOrderResource::collection($searchQuery->paginate(12)->withQueryString()),
             'search' => $request->search ?? '',
-            'branches' => BranchResource::collection($branches),
+            'branches' => fn () => BranchResource::collection(
+                $isCentralUser
+                    ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                        ->where('status', 'Aktif')
+                        ->get()
+                    : ($employee
+                        ? Branch::select('id', 'branch_code', 'branch_name', 'status')
+                            ->where('status', 'Aktif')
+                            ->where('id', $employee->branch_id)
+                            ->get()
+                        : collect())
+            ),
             'selectedBranch' => $request->branch ?? '',
             'selectedStartDate' => $request->start_date ?? '',
             'selectedEndDate' => $request->end_date ?? '',
@@ -272,10 +281,24 @@ class RequestOrderController extends Controller {
         return Inertia::render('Products/RequestOrders/CreateRequestOrder', [
             'branches' => BranchResource::collection($branch),
             'products' => CenterProductResource::collection(
-                CenterStock::with('product:id,product_name,product_category_id')->get()
+                CenterStock::with([
+                    'product:id,product_name,product_category_id',
+                    'product.productCategory:id,product_category_name',
+                ])->get()
             ),
-            'branchProductStocks' => $this->branchProductStocks($branch->pluck('id')),
+            'branchProductStocks' => $isCentralUser
+                ? []
+                : $this->branchProductStocks($branch->pluck('id')),
             'ro_number' => "RO-RSM-" . date('mdY') . "-XXXX"
+        ]);
+    }
+
+    public function branchStocks(Branch $branch): JsonResponse {
+        Gate::authorize('create', RequestOrder::class);
+        $this->authorizeRequestBranch((int) $branch->id);
+
+        return response()->json([
+            'data' => $this->branchProductStocks([$branch->id]),
         ]);
     }
 
@@ -291,7 +314,7 @@ class RequestOrderController extends Controller {
             'products.*.product_id' => 'required',
             'products.*.product_id.id' => 'required|integer|exists:center_stocks,id',
             'products.*.quantity' => 'required|integer|min:1',
-            'products.*.initial_stock' => 'required|integer|min:0',
+            'products.*.used_quantity' => 'required|integer|min:0',
             'products.*.damaged_quantity' => 'required|integer|min:0',
         ], [
             'products.*.product_id.required' => 'Kolom barang wajib diisi.',
@@ -299,8 +322,8 @@ class RequestOrderController extends Controller {
             'products.*.product_id.id.exists' => 'Barang yang dipilih tidak ditemukan.',
             'products.*.quantity.required' => 'Kolom request wajib diisi.',
             'products.*.quantity.min' => 'Jumlah request minimal 1.',
-            'products.*.initial_stock.required' => 'Kolom sisa stok wajib diisi.',
-            'products.*.initial_stock.integer' => 'Sisa stok harus berupa angka bulat.',
+            'products.*.used_quantity.required' => 'Kolom terpakai wajib diisi.',
+            'products.*.used_quantity.integer' => 'Kolom terpakai harus berupa angka bulat.',
             'products.*.damaged_quantity.required' => 'Kolom rusak wajib diisi.',
             'products.*.damaged_quantity.integer' => 'Kolom rusak harus berupa angka bulat.',
         ]);
@@ -351,7 +374,7 @@ class RequestOrderController extends Controller {
                     'request_order_id' => $create->id,
                     'center_stock_id' => $product['product_id']['id'],
                     'quantity' => $product['quantity'],
-                    'initial_stock' => $stocks['remaining_stock'],
+                    'initial_stock' => $stocks['initial_stock'],
                     'used_quantity' => $stocks['used_stock'],
                     'damaged_quantity' => $stocks['damaged_stock'],
                     'final_stock' => $stocks['final_stock'],
@@ -451,13 +474,17 @@ class RequestOrderController extends Controller {
             'requestOrder' => new RequestOrderResource($requestOrder->load([
                 'branch:id,branch_code,branch_name,status',
                 'listRequestOrder.centerStock:id,product_id,stock,serial_barcode',
-                'listRequestOrder.centerStock.product:id,product_name',
+                'listRequestOrder.centerStock.product:id,product_name,product_category_id',
+                'listRequestOrder.centerStock.product.productCategory:id,product_category_name',
             ])),
             'branches' => BranchResource::collection($branch),
             'products' => CenterProductResource::collection(
-                CenterStock::with('product:id,product_name,product_category_id')->get()
+                CenterStock::with([
+                    'product:id,product_name,product_category_id',
+                    'product.productCategory:id,product_category_name',
+                ])->get()
             ),
-            'branchProductStocks' => $this->branchProductStocks($branch->pluck('id')),
+            'branchProductStocks' => $this->branchProductStocks([$requestOrder->branch_id]),
         ]);
     }
 
@@ -480,7 +507,7 @@ class RequestOrderController extends Controller {
             'products.*.product_id' => 'required',
             'products.*.product_id.id' => 'required|integer|exists:center_stocks,id',
             'products.*.quantity' => 'required|integer|min:1',
-            'products.*.initial_stock' => 'required|integer|min:0',
+            'products.*.used_quantity' => 'required|integer|min:0',
             'products.*.damaged_quantity' => 'required|integer|min:0',
         ], [
             'products.*.product_id.required' => 'Kolom barang wajib diisi.',
@@ -488,8 +515,8 @@ class RequestOrderController extends Controller {
             'products.*.product_id.id.exists' => 'Barang yang dipilih tidak ditemukan.',
             'products.*.quantity.required' => 'Kolom request wajib diisi.',
             'products.*.quantity.min' => 'Jumlah request minimal 1.',
-            'products.*.initial_stock.required' => 'Kolom sisa stok wajib diisi.',
-            'products.*.initial_stock.integer' => 'Sisa stok harus berupa angka bulat.',
+            'products.*.used_quantity.required' => 'Kolom terpakai wajib diisi.',
+            'products.*.used_quantity.integer' => 'Kolom terpakai harus berupa angka bulat.',
             'products.*.damaged_quantity.required' => 'Kolom rusak wajib diisi.',
             'products.*.damaged_quantity.integer' => 'Kolom rusak harus berupa angka bulat.',
         ]);
@@ -533,7 +560,7 @@ class RequestOrderController extends Controller {
                     'request_order_id' => $requestOrder->id,
                     'center_stock_id' => $product['product_id']['id'],
                     'quantity' => $product['quantity'],
-                    'initial_stock' => $stocks['remaining_stock'],
+                    'initial_stock' => $stocks['initial_stock'],
                     'used_quantity' => $stocks['used_stock'],
                     'damaged_quantity' => $stocks['damaged_stock'],
                     'final_stock' => $stocks['final_stock'],
@@ -640,7 +667,10 @@ class RequestOrderController extends Controller {
 
                     $item->update([
                         'approved_quantity' => $approvedQuantity,
-                        'final_stock' => (int) $item->initial_stock + $approvedQuantity,
+                        'final_stock' => (int) $item->initial_stock
+                            + $approvedQuantity
+                            - (int) $item->used_quantity
+                            - (int) $item->damaged_quantity,
                         'status' => 1,
                     ]);
                 }

@@ -1,7 +1,7 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-    import { ref, computed, watch } from 'vue';
-    import { usePage, useForm, router, Head, Link } from '@inertiajs/vue3';
+    import { ref, computed } from 'vue';
+    import { usePage, useForm, Head, Link } from '@inertiajs/vue3';
     import Modal from '@/Components/Modal.vue';
     import InputError from '@/Components/InputError.vue';
     import TextInput from "@/Components/TextInput.vue";
@@ -11,6 +11,7 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
+    import { useDebouncedTableFilters } from '@/Composables/useDebouncedTableSearch';
     const props = defineProps([
         "fetchData",
         "userBranch",
@@ -36,43 +37,26 @@
         updated_at: ""
     });
     const { hasPermission } = usePermission();
-    let search = ref(usePage().props.search), pageNumber = ref(1);
+    const search = ref(usePage().props.search);
     const selectedBranch = ref(props.selectedBranch ?? "");
     const selectedStartDate = ref(props.selectedStartDate ?? "");
     const selectedEndDate = ref(props.selectedEndDate ?? "");
-    let searchUrl = computed(() => {
-        let url = new URL(route('requestOrders.index'));
-        url.searchParams.append("page", pageNumber.value);
-        if (search.value) {
-            url.searchParams.append("search", search.value);
-        }
-        if (selectedBranch.value) {
-            url.searchParams.append("branch", selectedBranch.value);
-        }
-        if (selectedStartDate.value) {
-            url.searchParams.append("start_date", selectedStartDate.value);
-        }
-        if (selectedEndDate.value) {
-            url.searchParams.append("end_date", selectedEndDate.value);
-        }
-        return url;
-    });
-    watch(() => searchUrl.value, (updatedSearchUrl) => {
-        router.visit(updatedSearchUrl, {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true
-        });
-    });
-    watch([search, selectedBranch, selectedStartDate, selectedEndDate], () => {
-        pageNumber.value = 1;
-    });
+    useDebouncedTableFilters(
+        'requestOrders.index',
+        [search, selectedBranch, selectedStartDate, selectedEndDate],
+        () => ({
+            search: search.value,
+            branch: selectedBranch.value,
+            start_date: selectedStartDate.value,
+            end_date: selectedEndDate.value,
+        }),
+        ['fetchData', 'search', 'selectedBranch', 'selectedStartDate', 'selectedEndDate'],
+    );
     const resetFilters = () => {
         search.value = "";
         selectedBranch.value = "";
         selectedStartDate.value = "";
         selectedEndDate.value = "";
-        pageNumber.value = 1;
     };
 
     const showModalCreate = ref(false);
@@ -203,9 +187,7 @@
         return "Rp. " + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
     const stockAtRequest = (item) => {
-        return Number(item.initial_stock ?? 0)
-            + Number(item.used_quantity ?? 0)
-            + Number(item.damaged_quantity ?? 0);
+        return Number(item.initial_stock ?? 0);
     };
     const steps = [
         "Sedang diverifikasi",

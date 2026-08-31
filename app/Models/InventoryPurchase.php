@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InventoryPurchase extends Model
 {
@@ -19,6 +20,10 @@ class InventoryPurchase extends Model
 
     public function updateInventoryPurchaseHistory(): HasMany {
         return $this->hasMany(UpdateInventoryPurchaseHistory::class);
+    }
+
+    public function latestUpdateInventoryPurchaseHistory(): HasOne {
+        return $this->hasOne(UpdateInventoryPurchaseHistory::class)->latestOfMany();
     }
 
     public function listInventoryPurchase(): HasMany {

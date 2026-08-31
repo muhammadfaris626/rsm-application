@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
@@ -44,6 +45,10 @@ class RequestReturn extends Model
 
     public function updateRequestReturnHistory(): HasMany {
         return $this->hasMany(UpdateRequestReturnHistory::class);
+    }
+
+    public function latestUpdateRequestReturnHistory(): HasOne {
+        return $this->hasOne(UpdateRequestReturnHistory::class)->latestOfMany();
     }
 
     public function listRequestReturn(): HasMany {

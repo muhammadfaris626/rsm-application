@@ -48,8 +48,14 @@ class RequestReturnController extends Controller {
             return back();
         }
 
+        $productsById = BranchProduct::query()
+            ->with('product:id,product_name')
+            ->whereIn('id', collect($branchProducts)->pluck('id')->filter())
+            ->get()
+            ->keyBy('id');
+
         foreach ($branchProducts as $branchProductData) {
-            $product = BranchProduct::with('product:id,product_name')->find($branchProductData['id'] ?? null);
+            $product = $productsById->get($branchProductData['id'] ?? null);
             $returnQuantity = $branchProductData['total_return'] ?? null;
 
             if (!$product) {
@@ -99,7 +105,7 @@ class RequestReturnController extends Controller {
                 'listRequestReturn:id,request_return_id,branch_product_id,quantity,serial_barcode',
                 'listRequestReturn.branchProduct:id,product_id,quantity,serial_barcode,total_return',
                 'listRequestReturn.branchProduct.product:id,product_name',
-                'updateRequestReturnHistory.user:id,name',
+                'latestUpdateRequestReturnHistory.user:id,name',
                 'requestReturnLog.user:id,name'
             ])
             ->when($employee, fn($query) => $query->where('branch_id', $employee->branch_id))
@@ -181,8 +187,12 @@ class RequestReturnController extends Controller {
             'user_id' => Auth::user()->id
         ]);
 
-        foreach ($request->request_order_id['branch_product'] as $branchProductData) {
-            $product = BranchProduct::find($branchProductData['id']);
+        $submittedBranchProducts = collect($request->request_order_id['branch_product']);
+        $productsById = BranchProduct::whereIn('id', $submittedBranchProducts->pluck('id')->filter())
+            ->get()
+            ->keyBy('id');
+        foreach ($submittedBranchProducts as $branchProductData) {
+            $product = $productsById->get($branchProductData['id']);
             if ($product) {
                 $product->update(['total_return' => $branchProductData['total_return']]);
                 ListRequestReturn::create([
@@ -294,8 +304,12 @@ class RequestReturnController extends Controller {
 
         ListRequestReturn::where('request_return_id', $requestReturn->id)->delete();
 
-        foreach (($request->request_order_id['branch_product'] ?? []) as $branchProductData) {
-            $product = BranchProduct::find($branchProductData['id'] ?? null);
+        $submittedBranchProducts = collect($request->request_order_id['branch_product'] ?? []);
+        $productsById = BranchProduct::whereIn('id', $submittedBranchProducts->pluck('id')->filter())
+            ->get()
+            ->keyBy('id');
+        foreach ($submittedBranchProducts as $branchProductData) {
+            $product = $productsById->get($branchProductData['id'] ?? null);
             if ($product) {
                 $product->update(['total_return' => $branchProductData['total_return'] ?? '']);
                 ListRequestReturn::create([

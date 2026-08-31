@@ -25,9 +25,7 @@ class RequestOrderResource extends JsonResource
             'status' => $this->status,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateRequestOrderHistory', function() {
-                return $this->updateRequestOrderHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateRequestOrderHistory'),
             'listData' => $this->whenLoaded('listRequestOrder', function() {
                 return $this->listRequestOrder;
             }, []),

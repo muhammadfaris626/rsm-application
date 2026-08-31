@@ -49,7 +49,7 @@ class InventoryPurchaseController extends Controller
                 'supplier:id,name',
                 'listInventoryPurchase:id,inventory_purchase_id,product_id,price,quantity,total_price',
                 'listInventoryPurchase.product:id,product_name',
-                'updateInventoryPurchaseHistory.user:id,name'
+                'latestUpdateInventoryPurchaseHistory.user:id,name'
             ])
             ->latest();
         
@@ -104,6 +104,7 @@ class InventoryPurchaseController extends Controller
             'user_id' => Auth::user()->id
         ]);
         
+        $nextCenterStockId = (CenterStock::max('id') ?? 0) + 1;
         foreach ($request->products as $product) {
             ListInventoryPurchase::create([
                 'inventory_purchase_id' => $create->id,
@@ -113,12 +114,11 @@ class InventoryPurchaseController extends Controller
                 'total_price' => $product['total_price'],
             ]);
             
-            $count = (CenterStock::max('id') ?? 0) + 1;
             CenterStock::create([
                 'inventory_purchase_id' => $create->id,
                 'product_id' => $product['product_id']['id'],
                 'stock' => $product['quantity'],
-                'serial_barcode' => $product['product_id']['product_category_id'][0]['product_category_code'] . 'B' . date('mdY') . str_pad($count, 4, '0', STR_PAD_LEFT)
+                'serial_barcode' => $product['product_id']['product_category_id'][0]['product_category_code'] . 'B' . date('mdY') . str_pad($nextCenterStockId++, 4, '0', STR_PAD_LEFT)
             ]);
         }
         
@@ -201,6 +201,19 @@ class InventoryPurchaseController extends Controller
 
         CenterStock::whereIn('id', $removedCenterStockIds)->delete();
 
+        $productIds = collect($request->products)
+            ->map(fn ($product) => is_array($product['product_id']) ? $product['product_id']['id'] : $product['product_id'])
+            ->filter()
+            ->unique();
+        $productCategoryCodes = Product::query()
+            ->with('productCategory:id,product_category_code')
+            ->whereIn('id', $productIds)
+            ->get()
+            ->mapWithKeys(fn (Product $product) => [
+                $product->id => $product->productCategory?->product_category_code ?? '',
+            ]);
+        $nextCenterStockId = (CenterStock::max('id') ?? 0) + 1;
+
         foreach ($request->products as $product) {
             $productId = is_array($product['product_id']) ? $product['product_id']['id'] : $product['product_id'];
 
@@ -208,10 +221,7 @@ class InventoryPurchaseController extends Controller
             if (is_array($product['product_id']) && isset($product['product_id']['product_category_id'][0]['product_category_code'])) {
                 $categoryCode = $product['product_id']['product_category_id'][0]['product_category_code'];
             } else {
-                $productData = Product::with('productCategory')->find($productId);
-                if ($productData && isset($productData->productCategory->product_category_code)) {
-                    $categoryCode = $productData->productCategory->product_category_code;
-                }
+                $categoryCode = $productCategoryCodes->get($productId, '');
             }
             
             ListInventoryPurchase::updateOrCreate(
@@ -226,8 +236,7 @@ class InventoryPurchaseController extends Controller
                 ]
             );
 
-            $count = (CenterStock::max('id') ?? 0) + 1;
-            $serialBarcode = $categoryCode . 'B' . date('mdY') . str_pad($count, 4, '0', STR_PAD_LEFT);
+            $serialBarcode = $categoryCode . 'B' . date('mdY') . str_pad($nextCenterStockId++, 4, '0', STR_PAD_LEFT);
             CenterStock::updateOrCreate(
                 [
                     'inventory_purchase_id' => $inventoryPurchase->id,

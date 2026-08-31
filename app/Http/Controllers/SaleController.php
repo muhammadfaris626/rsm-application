@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,7 +67,7 @@ class SaleController extends Controller
                 'listSale:id,sale_id,branch_product_id,quantity,total_price',
                 'listSale.branchProduct:id,product_id,quantity,serial_barcode',
                 'listSale.branchProduct.product:id,product_name',
-                'updateSaleHistory.user:id,name'
+                'latestUpdateSaleHistory.user:id,name'
             ])
             ->when(!$isCentralUser && $employee,
                 fn($query) => $query->where('branch_id', $employee->branch_id))
@@ -85,7 +86,7 @@ class SaleController extends Controller
         $data = SaleResource::collection($searchQuery->paginate(12)->withQueryString());
         
         // Cache branches for filter
-        $branches = Cache::remember("branches_for_user_{$user->id}", 300, function() use ($isCentralUser, $employee) {
+        $branches = fn () => Cache::remember("branches_for_user_{$user->id}", 300, function() use ($isCentralUser, $employee) {
             return $isCentralUser
                 ? Branch::select('id', 'branch_code', 'branch_name', 'status')
                     ->where('status', 'Aktif')
@@ -100,7 +101,7 @@ class SaleController extends Controller
         
         // Cache technicians
         $techniciansCacheKey = $isCentralUser ? 'central' : ($employee?->branch_id ?? 'none');
-        $technicians = Cache::remember("technicians_branch_{$techniciansCacheKey}", 300, function() use ($isCentralUser, $employee) {
+        $technicians = fn () => Cache::remember("technicians_branch_{$techniciansCacheKey}", 300, function() use ($isCentralUser, $employee) {
             $teknisiPosition = Position::select('id')->where('position_name', 'Teknisi')->first();
             
             $techniciansQuery = ManagementStructure::query()
@@ -129,8 +130,8 @@ class SaleController extends Controller
         return Inertia::render('Products/Sales/IndexSale', [
             'fetchData' => $data,
             'search' => $request->search ?? '',
-            'branches' => BranchResource::collection($branches),
-            'technicians' => $technicians,
+            'branches' => fn () => BranchResource::collection($branches()),
+            'technicians' => fn () => $technicians(),
             'selectedBranch' => $request->branch ?? null,
             'selectedStartDate' => $request->start_date ?? null,
             'selectedEndDate' => $request->end_date ?? null,
@@ -222,11 +223,17 @@ class SaleController extends Controller
                 return back();
             }
 
+            $branchProducts = BranchProduct::query()
+                ->select('id', 'product_id', 'quantity')
+                ->with('product:id,product_name')
+                ->whereIn('id', $branchProductIds)
+                ->get()
+                ->keyBy('id');
             $insufficientStock = [];
             foreach ($request->products as $product) {
                 $productId = $product['branch_product_id']['id'];
                 $requestedQuantity = $product['quantity'];
-                $branchProduct = BranchProduct::with('product:id,product_name')->find($productId);
+                $branchProduct = $branchProducts->get($productId);
                 $availableStock = $branchProduct?->quantity ?? 0;
                 if ($requestedQuantity > $availableStock) {
                     $insufficientStock[] = $branchProduct?->product?->product_name ?? 'Barang tidak ditemukan';
@@ -239,29 +246,31 @@ class SaleController extends Controller
                 ]);
                 return back();
             }
-            $create = Sale::create([
-                'branch_id' => $branchId,
-                'invoice_number' => $invoiceFormat,
-                'date' => $request->date,
-                'management_structure_id' => $technician->id
-            ]);
-            UpdateSaleHistory::create([
-                'sale_id' => $create->id,
-                'user_id' => Auth::user()->id,
-            ]);
-            for ($i=0; $i < count($request->products); $i++) {
-                ListSale::create([
+            DB::transaction(function () use ($request, $branchId, $invoiceFormat, $technician, $branchProducts): void {
+                $create = Sale::create([
+                    'branch_id' => $branchId,
+                    'invoice_number' => $invoiceFormat,
+                    'date' => $request->date,
+                    'management_structure_id' => $technician->id
+                ]);
+                UpdateSaleHistory::create([
                     'sale_id' => $create->id,
-                    'branch_product_id' => $request->products[$i]['branch_product_id']['id'],
-                    'price' => $request->products[$i]['price'],
-                    'quantity' => $request->products[$i]['quantity'],
-                    'total_price' => $request->products[$i]['total_price']
+                    'user_id' => Auth::id(),
                 ]);
-                $product = BranchProduct::where('id', $request->products[$i]['branch_product_id']['id'])->first();
-                $product->update([
-                    'quantity' => $product->quantity - $request->products[$i]['quantity']
-                ]);
-            }
+                foreach ($request->products as $item) {
+                    $branchProduct = $branchProducts->get($item['branch_product_id']['id']);
+                    ListSale::create([
+                        'sale_id' => $create->id,
+                        'branch_product_id' => $branchProduct->id,
+                        'price' => $item['price'],
+                        'quantity' => $item['quantity'],
+                        'total_price' => $item['total_price'],
+                    ]);
+                    $branchProduct->update([
+                        'quantity' => (int) $branchProduct->quantity - (int) $item['quantity'],
+                    ]);
+                }
+            });
         }
         Session::flash('toast', ['message' => 'Data penjualan berhasil ditambahkan.']);
         return to_route('sales.index');

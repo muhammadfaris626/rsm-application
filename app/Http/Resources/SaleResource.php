@@ -31,9 +31,7 @@ class SaleResource extends JsonResource
             'list_sale_sum_total_price' => $this->list_sale_sum_total_price ?? null,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateSaleHistory', function() {
-                return $this->updateSaleHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateSaleHistory'),
         ];
     }
 }

@@ -28,3 +28,36 @@ export function useDebouncedTableSearch(routeName, initialSearch = '', delay = 3
 
     return search;
 }
+
+export function useDebouncedTableFilters(
+    routeName,
+    sources,
+    parameters,
+    only = ['fetchData', 'search'],
+    delay = 350,
+) {
+    let filterTimer;
+
+    watch(sources, () => {
+        clearTimeout(filterTimer);
+
+        filterTimer = setTimeout(() => {
+            const url = new URL(route(routeName));
+
+            Object.entries(parameters()).forEach(([key, value]) => {
+                if (value !== '' && value !== null && value !== undefined) {
+                    url.searchParams.set(key, value);
+                }
+            });
+
+            router.visit(url, {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+                only,
+            });
+        }, delay);
+    });
+
+    onBeforeUnmount(() => clearTimeout(filterTimer));
+}

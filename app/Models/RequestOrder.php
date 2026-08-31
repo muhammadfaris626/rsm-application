@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
@@ -33,6 +34,10 @@ class RequestOrder extends Model
 
     public function updateRequestOrderHistory(): HasMany {
         return $this->hasMany(UpdateRequestOrderHistory::class);
+    }
+
+    public function latestUpdateRequestOrderHistory(): HasOne {
+        return $this->hasOne(UpdateRequestOrderHistory::class)->latestOfMany();
     }
 
     public function listRequestOrder(): HasMany {

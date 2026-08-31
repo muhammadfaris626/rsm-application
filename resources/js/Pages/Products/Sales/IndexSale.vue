@@ -1,12 +1,13 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { ref, computed, watch } from 'vue';
-    import { usePage, useForm, router, Head, Link } from '@inertiajs/vue3';
+    import { usePage, useForm, Head, Link } from '@inertiajs/vue3';
     import Modal from '@/Components/Modal.vue';
     import InputError from '@/Components/InputError.vue';
     import TextInput from '@/Components/TextInput.vue';
     import VueMultiselect from "vue-multiselect";
     import { usePermission } from '@/Composables/permissions';
+    import { useDebouncedTableFilters } from '@/Composables/useDebouncedTableSearch';
     
     const props = defineProps(["fetchData", "branches", "technicians", "selectedBranch", "selectedStartDate", "selectedEndDate", "selectedTechnician"]);
     
@@ -30,39 +31,35 @@
     let selectTechnician = ref(props.selectedTechnician ? { id: props.selectedTechnician } : null);
     let showFilters = ref(false);
     
-    const filterUrl = computed(() => {
-        let url = new URL(route('sales.index'));
-        url.searchParams.append("page", pageNumber.value);
-        if (search.value) {
-            url.searchParams.append("search", search.value);
-        }
-        if (selectBranch.value) {
-            url.searchParams.append("branch", selectBranch.value.id);
-        }
-        if (selectStartDate.value) {
-            url.searchParams.append("start_date", selectStartDate.value);
-        }
-        if (selectEndDate.value) {
-            url.searchParams.append("end_date", selectEndDate.value);
-        }
-        if (selectTechnician.value) {
-            url.searchParams.append("technician", selectTechnician.value.id);
-        }
-        return url;
-    });
-    
-    watch(() => filterUrl.value, (updatedFilterUrl) => {
-        router.visit(updatedFilterUrl, {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true
-        });
-    });
+    useDebouncedTableFilters(
+        'sales.index',
+        [search, pageNumber, selectBranch, selectStartDate, selectEndDate, selectTechnician],
+        () => ({
+            page: pageNumber.value,
+            search: search.value,
+            branch: selectBranch.value?.id,
+            start_date: selectStartDate.value,
+            end_date: selectEndDate.value,
+            technician: selectTechnician.value?.id,
+        }),
+        [
+            'fetchData',
+            'search',
+            'selectedBranch',
+            'selectedStartDate',
+            'selectedEndDate',
+            'selectedTechnician',
+        ],
+    );
     
     watch(() => usePage().props.fetchData?.meta?.current_page, (newPage) => {
         if (newPage) {
             pageNumber.value = newPage;
         }
+    });
+
+    watch([search, selectBranch, selectStartDate, selectEndDate, selectTechnician], () => {
+        pageNumber.value = 1;
     });
     
     const clearFilters = () => {

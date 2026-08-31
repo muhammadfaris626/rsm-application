@@ -8,6 +8,7 @@
     import Textarea from '@/Components/Textarea.vue';
     import VueMultiselect from "vue-multiselect";
     import RequestOrderProductCard from '@/Components/RequestOrderProductCard.vue';
+    import axios from 'axios';
 
     const props = defineProps({
         requestOrder: {
@@ -39,7 +40,7 @@
             product_id: {
                 id: item.center_stock_id,
                 product_id: item.center_stock.product_id,
-                label: item.center_stock.product.product_name,
+                label: `[ ${item.center_stock.product.product_category?.product_category_name ?? 'Tanpa Kategori'} ] ${item.center_stock.product.product_name}`,
                 stock: item.center_stock.stock,
                 serial_barcode: item.center_stock.serial_barcode
             },
@@ -56,7 +57,7 @@
         form.products.push({
             product_id: "",
             quantity: "",
-            initial_stock: "",
+            initial_stock: 0,
             used_quantity: 0,
             damaged_quantity: 0,
             final_stock: 0,
@@ -73,7 +74,7 @@
         return products.value.map(product => ({
             id: product.id,
             product_id: product.product_id?.[0]?.id,
-            label: product.product_id?.[0]?.product_name ?? '-',
+            label: `[ ${product.product_id?.[0]?.product_category_id?.[0]?.product_category_name ?? 'Tanpa Kategori'} ] ${product.product_id?.[0]?.product_name ?? '-'}`,
             stock: product.stock || 0,
             serial_barcode: product.serial_barcode
         }));
@@ -84,8 +85,9 @@
         const number = Number(value || 0);
         return Number.isFinite(number) ? number : 0;
     };
+    const liveBranchProductStocks = ref(props.branchProductStocks ?? []);
     const branchStockMap = computed(() => {
-        return new Map((props.branchProductStocks ?? []).map(item => [
+        return new Map(liveBranchProductStocks.value.map(item => [
             `${item.branch_id}-${item.product_id}`,
             toNumber(item.stock)
         ]));
@@ -95,24 +97,24 @@
         if (!selectedBranchId.value || !productId) return 0;
         return branchStockMap.value.get(`${selectedBranchId.value}-${productId}`) ?? 0;
     };
-    const usedStockFor = (product) => branchStockFor(product)
-        - toNumber(product.initial_stock)
-        - toNumber(product.damaged_quantity);
-    const finalStockFor = (product) => branchStockFor(product)
+    const usedStockFor = (product) => toNumber(product.used_quantity);
+    const finalStockFor = (product) => toNumber(product.initial_stock)
         - usedStockFor(product)
         - toNumber(product.damaged_quantity);
-    const hasInvalidStock = (product) => usedStockFor(product) < 0;
+    const hasInvalidStock = (product) => finalStockFor(product) < 0;
     const syncStockReport = () => {
         form.products.forEach((product) => {
             const selectedProduct = formattedProducts.value.find(p => p.id === product.product_id?.id);
             product.stock = selectedProduct ? selectedProduct.stock : 0;
+            product.initial_stock = branchStockFor(product);
             product.used_quantity = usedStockFor(product);
             product.final_stock = finalStockFor(product);
         });
     };
     const resetProductStocks = (product, selectedProduct) => {
         product.product_id = selectedProduct;
-        product.initial_stock = "";
+        product.initial_stock = branchStockFor(product);
+        product.used_quantity = 0;
         product.damaged_quantity = 0;
         syncStockReport();
     };
@@ -121,7 +123,7 @@
         () => [
             selectedBranchId.value,
             form.products.map(product => product.product_id?.id).join(','),
-            form.products.map(product => `${product.initial_stock}|${product.damaged_quantity}`).join(',')
+            form.products.map(product => `${product.used_quantity}|${product.damaged_quantity}`).join(',')
         ],
         syncStockReport,
         { deep: true, immediate: true }
@@ -132,6 +134,18 @@
             form.products = [];
         }
         previousBranchId = branchId;
+        if (!branchId) {
+            liveBranchProductStocks.value = [];
+            return;
+        }
+
+        axios.get(route('requestOrders.branchStocks', branchId))
+            .then(({ data }) => {
+                if (selectedBranchId.value === branchId) {
+                    liveBranchProductStocks.value = data.data ?? [];
+                    syncStockReport();
+                }
+            });
     });
 
 </script>

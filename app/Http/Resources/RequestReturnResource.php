@@ -28,9 +28,7 @@ class RequestReturnResource extends JsonResource
             'status' => $this->status,
             'created_at' => Carbon::parse($this->created_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
             'updated_at' => Carbon::parse($this->updated_at)->isoFormat('D MMMM YYYY HH:mm:ss'),
-            'last_update' => $this->whenLoaded('updateRequestReturnHistory', function() {
-                return $this->updateRequestReturnHistory->sortByDesc('id')->first();
-            }),
+            'last_update' => $this->whenLoaded('latestUpdateRequestReturnHistory'),
             'listData' => $this->whenLoaded('listRequestReturn', function() {
                 return $this->listRequestReturn;
             }, []),

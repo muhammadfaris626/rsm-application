@@ -83,14 +83,13 @@
 
         <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
             <div>
-                <InputLabel :for="'initial_stock_' + index" value="Sisa Stok" />
+                <InputLabel :for="'initial_stock_' + index" value="Stok Awal" />
                 <TextInput
                     :id="'initial_stock_' + index"
                     type="number"
-                    min="0"
-                    class="mt-1 block w-full bg-white"
-                    placeholder="0"
-                    v-model="product.initial_stock"
+                    class="mt-1 block w-full bg-slate-100 font-semibold text-slate-700"
+                    :model-value="product.initial_stock"
+                    disabled
                 />
                 <InputError class="mt-2" :message="errors['products.' + index + '.initial_stock']" />
             </div>
@@ -99,11 +98,12 @@
                 <TextInput
                     :id="'used_quantity_' + index"
                     type="number"
-                    class="mt-1 block w-full bg-slate-100 font-semibold text-slate-700"
-                    :model-value="usedStock"
-                    disabled
+                    min="0"
+                    class="mt-1 block w-full bg-white"
+                    placeholder="0"
+                    v-model="product.used_quantity"
                 />
-                <p class="mt-1 text-xs text-slate-500">Otomatis</p>
+                <InputError class="mt-2" :message="errors['products.' + index + '.used_quantity']" />
             </div>
             <div>
                 <InputLabel :for="'damaged_quantity_' + index" value="Rusak" />
@@ -143,10 +143,10 @@
         </div>
 
         <p v-if="invalidStock" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            Sisa stok dan barang rusak tidak boleh melebihi stok cabang.
+            Barang terpakai dan rusak tidak boleh melebihi stok awal.
         </p>
         <p v-else class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            Terpakai dihitung otomatis dari stok cabang − sisa stok − rusak.
+            Stok akhir = stok awal + tambahan yang disetujui − terpakai − rusak.
         </p>
     </article>
 </template>

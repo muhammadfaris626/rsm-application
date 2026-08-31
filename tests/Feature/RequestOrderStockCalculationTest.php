@@ -32,7 +32,7 @@ class RequestOrderStockCalculationTest extends TestCase
         Gate::before(fn (User $user, string $ability): bool => true);
     }
 
-    public function test_used_and_final_stock_are_calculated_from_branch_stock(): void
+    public function test_initial_and_final_stock_follow_the_latest_branch_stock(): void
     {
         $data = $this->stockScenario();
 
@@ -44,16 +44,15 @@ class RequestOrderStockCalculationTest extends TestCase
                     'id' => $data['centerStock']->id,
                     'serial_barcode' => $data['centerStock']->serial_barcode,
                 ],
-                'initial_stock' => 6,
                 'damaged_quantity' => 2,
-                'used_quantity' => 999,
+                'used_quantity' => 12,
                 'quantity' => 8,
             ]],
         ]);
 
         $response->assertRedirect(route('requestOrders.index'));
         $item = ListRequestOrder::latest('id')->firstOrFail();
-        $this->assertSame(6, (int) $item->initial_stock);
+        $this->assertSame(20, (int) $item->initial_stock);
         $this->assertSame(12, (int) $item->used_quantity);
         $this->assertSame(2, (int) $item->damaged_quantity);
         $this->assertSame(8, (int) $item->quantity);
@@ -73,7 +72,7 @@ class RequestOrderStockCalculationTest extends TestCase
             'request_order_id' => $order->id,
             'center_stock_id' => $data['centerStock']->id,
             'quantity' => 8,
-            'initial_stock' => 6,
+            'initial_stock' => 20,
             'used_quantity' => 12,
             'damaged_quantity' => 2,
             'final_stock' => 6,
@@ -106,7 +105,7 @@ class RequestOrderStockCalculationTest extends TestCase
             'request_order_id' => $order->id,
             'center_stock_id' => $data['centerStock']->id,
             'quantity' => 8,
-            'initial_stock' => 6,
+            'initial_stock' => 20,
             'used_quantity' => 12,
             'damaged_quantity' => 2,
             'approved_quantity' => 5,
@@ -143,7 +142,7 @@ class RequestOrderStockCalculationTest extends TestCase
             'request_order_id' => $order->id,
             'center_stock_id' => $data['centerStock']->id,
             'quantity' => 5,
-            'initial_stock' => 15,
+            'initial_stock' => 20,
             'used_quantity' => 5,
             'damaged_quantity' => 0,
             'approved_quantity' => 5,
@@ -176,7 +175,7 @@ class RequestOrderStockCalculationTest extends TestCase
             'request_order_id' => $order->id,
             'center_stock_id' => $data['centerStock']->id,
             'quantity' => 5,
-            'initial_stock' => 10,
+            'initial_stock' => 20,
             'used_quantity' => 10,
             'damaged_quantity' => 0,
             'approved_quantity' => 5,
@@ -229,7 +228,7 @@ class RequestOrderStockCalculationTest extends TestCase
                 'id' => $data['centerStock']->id,
                 'serial_barcode' => 'BARCODE-YANG-DIUBAH',
             ],
-            'initial_stock' => 10,
+            'used_quantity' => 10,
             'damaged_quantity' => 0,
             'quantity' => 5,
         ];
@@ -246,7 +245,7 @@ class RequestOrderStockCalculationTest extends TestCase
         $this->assertDatabaseMissing('request_orders', ['date' => '2026-08-24']);
     }
 
-    public function test_remaining_and_damaged_stock_cannot_exceed_branch_stock(): void
+    public function test_used_and_damaged_stock_cannot_exceed_initial_stock(): void
     {
         $data = $this->stockScenario();
 
@@ -259,14 +258,14 @@ class RequestOrderStockCalculationTest extends TestCase
                         'id' => $data['centerStock']->id,
                         'serial_barcode' => $data['centerStock']->serial_barcode,
                     ],
-                    'initial_stock' => 19,
+                    'used_quantity' => 19,
                     'damaged_quantity' => 2,
                     'quantity' => 8,
                 ]],
             ]);
 
         $response->assertRedirect(route('requestOrders.create'))
-            ->assertSessionHasErrors('products.0.initial_stock');
+            ->assertSessionHasErrors('products.0.used_quantity');
         $this->assertDatabaseMissing('request_orders', ['date' => '2026-08-24']);
     }
 

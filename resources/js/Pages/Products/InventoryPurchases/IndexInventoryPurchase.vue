@@ -1,7 +1,7 @@
 <script setup>
     import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
     import { ref, computed, watch } from 'vue';
-    import { usePage, useForm, router, Head, Link } from '@inertiajs/vue3';
+    import { usePage, useForm, Head, Link } from '@inertiajs/vue3';
     import Modal from '@/Components/Modal.vue';
     import InputError from '@/Components/InputError.vue';
     import Table from '@/Components/Custom/Table.vue';
@@ -10,6 +10,7 @@
     import TableDataCell from '@/Components/Custom/TableDataCell.vue';
     import TablePagination from '@/Components/Custom/TablePagination.vue';
     import { usePermission } from '@/Composables/permissions';
+    import { useDebouncedTableFilters } from '@/Composables/useDebouncedTableSearch';
     const props = defineProps(["fetchData"]);
     const form = useForm({
         id: "",
@@ -22,26 +23,16 @@
         updated_at: ""
     });
     const { hasPermission } = usePermission();
-    let search = ref(usePage().props.search), pageNumber = ref(1);
+    const search = ref(usePage().props.search);
+    const pageNumber = ref(usePage().props.fetchData?.meta?.current_page ?? 1);
     const showFilters = ref(false);
-    
-    let searchUrl = computed(() => {
-        let url = new URL(route('inventoryPurchases.index'));
-        url.searchParams.append("page", pageNumber.value);
-        if (search.value) {
-            url.searchParams.append("search", search.value);
-        }
-        return url;
-    });
-    watch(() => searchUrl.value, (updatedSearchUrl) => {
-        router.visit(updatedSearchUrl, {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true,
-            onSuccess: () => {
-                pageNumber.value = 1;
-            }
-        });
+    useDebouncedTableFilters(
+        'inventoryPurchases.index',
+        [search, pageNumber],
+        () => ({ page: pageNumber.value, search: search.value }),
+    );
+    watch(search, () => {
+        pageNumber.value = 1;
     });
     
     const hasActiveFilters = computed(() => {
